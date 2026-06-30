@@ -1,0 +1,54 @@
+import { supabase } from "@/lib/supabase";
+import type { Company, TablesInsert, TablesUpdate } from "@/lib/types/database";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
+export async function getCompany(userId: string): Promise<Company | null> {
+  const { data } = await db
+    .from("companies")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
+
+export async function createCompany(company: TablesInsert<"companies">) {
+  const { data, error } = await db
+    .from("companies")
+    .insert(company)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Company;
+}
+
+export async function updateCompany(userId: string, updates: TablesUpdate<"companies">) {
+  const { data, error } = await db
+    .from("companies")
+    .update(updates)
+    .eq("user_id", userId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Company;
+}
+
+// Crea la empresa por defecto si el usuario todavía no tiene una (primer login)
+export async function ensureCompany(userId: string, email: string | null): Promise<Company> {
+  const existing = await getCompany(userId);
+  if (existing) return existing;
+
+  return createCompany({
+    user_id: userId,
+    name: "Mi negocio",
+    cuit: null,
+    address: null,
+    phone: null,
+    email: email ?? null,
+    currency: "ARS",
+    fiscal_year_start: 1,
+    tax_regime: "responsable_inscripto",
+    industry: "ecommerce",
+  });
+}

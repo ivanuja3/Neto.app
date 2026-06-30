@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Mail } from "lucide-react";
+import { signUp } from "@/lib/auth";
 
 const PLANES = [
   { id: "starter", label: "Starter", precio: "$19/mes", limite: "Hasta 300 órdenes/mes" },
@@ -10,15 +11,43 @@ const PLANES = [
 ];
 
 export default function SignupPage() {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [plan, setPlan] = useState("pro");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  function handleStep1(e: React.FormEvent) {
     e.preventDefault();
-    if (step === 1) { setStep(2); return; }
+    setStep(2);
+  }
+
+  async function handleStep2(e: React.FormEvent) {
+    e.preventDefault();
     setLoading(true);
-    setTimeout(() => { window.location.href = "/dashboard"; }, 1000);
+    setError("");
+
+    const { data, error } = await signUp(email, password, firstName, lastName);
+
+    if (error) {
+      setError(error.message === "User already registered"
+        ? "Ya existe una cuenta con ese email"
+        : "No pudimos crear tu cuenta. Probá de nuevo.");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+
+    if (data.session) {
+      window.location.href = "/dashboard";
+    } else {
+      setStep(3);
+    }
   }
 
   return (
@@ -34,58 +63,68 @@ export default function SignupPage() {
       </div>
 
       {/* Steps */}
-      <div className="flex items-center gap-2 justify-center mb-6">
-        {[1, 2].map((s) => (
-          <div key={s} className="flex items-center gap-2">
-            <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                s <= step ? "bg-[#10B981] text-[#080E1A]" : "bg-white/[0.06] text-[#475569]"
-              }`}
-            >
-              {s < step ? <Check className="w-3.5 h-3.5" /> : s}
+      {step < 3 && (
+        <div className="flex items-center gap-2 justify-center mb-6">
+          {[1, 2].map((s) => (
+            <div key={s} className="flex items-center gap-2">
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  s <= step ? "bg-[#10B981] text-[#080E1A]" : "bg-white/[0.06] text-[#475569]"
+                }`}
+              >
+                {s < step ? <Check className="w-3.5 h-3.5" /> : s}
+              </div>
+              {s < 2 && <div className={`w-12 h-px ${step > s ? "bg-[#10B981]" : "bg-white/[0.06]"}`} />}
             </div>
-            {s < 2 && <div className={`w-12 h-px ${step > s ? "bg-[#10B981]" : "bg-white/[0.06]"}`} />}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="bg-[#0C1424] border border-white/[0.06] rounded-2xl p-7">
-        {step === 1 ? (
+        {step === 1 && (
           <>
             <div className="mb-6">
               <h1 className="text-lg font-bold text-[#F1F5F9]">Creá tu cuenta</h1>
               <p className="text-sm text-[#94A3B8] mt-1">14 días gratis, sin tarjeta de crédito</p>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleStep1} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">Nombre</label>
-                  <input required type="text" placeholder="Iván"
+                  <input required type="text" placeholder="Iván" value={firstName} onChange={(e) => setFirstName(e.target.value)}
                     className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">Apellido</label>
-                  <input required type="text" placeholder="Ujaldón"
+                  <input required type="text" placeholder="Ujaldón" value={lastName} onChange={(e) => setLastName(e.target.value)}
                     className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">Email</label>
-                <input required type="email" placeholder="ivan@tuempresa.com"
+                <input required type="email" placeholder="ivan@tuempresa.com" value={email} onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">Contraseña</label>
-                <input required type="password" placeholder="Mín. 8 caracteres"
+                <input required minLength={8} type="password" placeholder="Mín. 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors" />
               </div>
               <button type="submit"
                 className="w-full flex items-center justify-center gap-2 bg-[#10B981] text-[#080E1A] font-semibold py-2.5 rounded-lg text-sm hover:bg-[#0D9268] transition-colors">
                 Siguiente <ArrowRight className="w-4 h-4" />
               </button>
+              <p className="text-[11px] text-[#475569] text-center leading-relaxed">
+                Al crear tu cuenta aceptás los{" "}
+                <Link href="/terminos" className="text-[#94A3B8] hover:text-[#10B981] underline underline-offset-2">Términos de servicio</Link>
+                {" "}y la{" "}
+                <Link href="/privacidad" className="text-[#94A3B8] hover:text-[#10B981] underline underline-offset-2">Política de privacidad</Link>.
+              </p>
             </form>
           </>
-        ) : (
+        )}
+
+        {step === 2 && (
           <>
             <div className="mb-6">
               <h1 className="text-lg font-bold text-[#F1F5F9]">Elegí tu plan</h1>
@@ -95,6 +134,7 @@ export default function SignupPage() {
               {PLANES.map((p) => (
                 <button
                   key={p.id}
+                  type="button"
                   onClick={() => setPlan(p.id)}
                   className={`w-full text-left rounded-xl border p-4 transition-colors ${
                     plan === p.id
@@ -128,7 +168,14 @@ export default function SignupPage() {
                 </button>
               ))}
             </div>
-            <form onSubmit={handleSubmit}>
+
+            {error && (
+              <p className="text-xs text-[#EF4444] bg-[#EF4444]/[0.08] border border-[#EF4444]/20 rounded-lg px-3 py-2 mb-4">
+                {error}
+              </p>
+            )}
+
+            <form onSubmit={handleStep2}>
               <button
                 type="submit"
                 disabled={loading}
@@ -143,14 +190,29 @@ export default function SignupPage() {
             </form>
           </>
         )}
+
+        {step === 3 && (
+          <div className="text-center py-2">
+            <div className="w-12 h-12 rounded-full bg-[#10B981]/10 flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-6 h-6 text-[#10B981]" />
+            </div>
+            <h1 className="text-lg font-bold text-[#F1F5F9]">Confirmá tu email</h1>
+            <p className="text-sm text-[#94A3B8] mt-2">
+              Te mandamos un link a <span className="text-[#F1F5F9] font-medium">{email}</span>.
+              Hacé clic ahí para activar tu cuenta.
+            </p>
+          </div>
+        )}
       </div>
 
-      <p className="text-center text-sm text-[#475569] mt-6">
-        ¿Ya tenés cuenta?{" "}
-        <Link href="/login" className="text-[#10B981] hover:opacity-80 font-medium transition-opacity">
-          Iniciá sesión
-        </Link>
-      </p>
+      {step < 3 && (
+        <p className="text-center text-sm text-[#475569] mt-6">
+          ¿Ya tenés cuenta?{" "}
+          <Link href="/login" className="text-[#10B981] hover:opacity-80 font-medium transition-opacity">
+            Iniciá sesión
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Store, Globe, FileText, Bell, CreditCard } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
+import { signOut } from "@/lib/auth";
+import { getCompany, updateCompany } from "@/lib/db/companies";
 
 const TABS = [
   { id: "negocio", label: "Mi negocio", icon: Store },
@@ -13,27 +16,15 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]["id"];
 
-function SaveButton({ saved }: { saved: boolean }) {
-  return (
-    <button
-      className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
-        saved
-          ? "bg-[#10B981]/10 text-[#10B981]"
-          : "bg-[#10B981] text-[#080E1A] hover:bg-[#0D9268]"
-      }`}
-    >
-      {saved ? <><Check className="w-4 h-4" /> Guardado</> : "Guardar cambios"}
-    </button>
-  );
-}
-
-function InputField({ label, placeholder, type = "text", value, hint }: { label: string; placeholder?: string; type?: string; value?: string; hint?: string }) {
+function InputField({ label, placeholder, type = "text", value, onChange, hint }: { label: string; placeholder?: string; type?: string; value?: string; onChange?: (v: string) => void; hint?: string }) {
+  const controlled = onChange !== undefined;
   return (
     <div>
       <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">{label}</label>
       <input
         type={type}
-        defaultValue={value}
+        {...(controlled ? { value: value ?? "" } : { defaultValue: value })}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         placeholder={placeholder}
         className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors"
       />
@@ -42,12 +33,17 @@ function InputField({ label, placeholder, type = "text", value, hint }: { label:
   );
 }
 
-function SelectField({ label, options, value }: { label: string; options: string[]; value?: string }) {
+function SelectField({ label, options, value, onChange }: { label: string; options: { label: string; value: string }[]; value?: string; onChange?: (v: string) => void }) {
+  const controlled = onChange !== undefined;
   return (
     <div>
       <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">{label}</label>
-      <select defaultValue={value} className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors">
-        {options.map((o) => <option key={o}>{o}</option>)}
+      <select
+        {...(controlled ? { value: value ?? "" } : { defaultValue: value })}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+        className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors"
+      >
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
   );
@@ -105,13 +101,88 @@ function ChannelCard({ nombre, conectado, plataforma }: { nombre: string; conect
   );
 }
 
+const INDUSTRIAS = [
+  { label: "Ecommerce", value: "ecommerce" },
+  { label: "Indumentaria", value: "indumentaria" },
+  { label: "Electrónica", value: "electronica" },
+  { label: "Alimentos", value: "alimentos" },
+  { label: "Hogar", value: "hogar" },
+  { label: "Otro", value: "otro" },
+];
+
+const REGIMENES = [
+  { label: "Responsable Inscripto", value: "responsable_inscripto" },
+  { label: "Monotributista", value: "monotributista" },
+  { label: "Exento", value: "exento" },
+];
+
+const MONEDAS = [
+  { label: "ARS (Peso Argentino)", value: "ARS" },
+  { label: "USD (Dólar)", value: "USD" },
+];
+
 export default function ConfiguracionPage() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("negocio");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loadingCompany, setLoadingCompany] = useState(true);
 
-  function handleSave() {
+  const [name, setName] = useState("");
+  const [cuit, setCuit] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [industry, setIndustry] = useState("ecommerce");
+  const [taxRegime, setTaxRegime] = useState("responsable_inscripto");
+  const [currency, setCurrency] = useState("ARS");
+
+  useEffect(() => {
+    if (!user) return;
+    getCompany(user.id).then((c) => {
+      if (c) {
+        setName(c.name ?? "");
+        setCuit(c.cuit ?? "");
+        setEmail(c.email ?? "");
+        setPhone(c.phone ?? "");
+        setAddress(c.address ?? "");
+        setIndustry(c.industry ?? "ecommerce");
+        setTaxRegime(c.tax_regime ?? "responsable_inscripto");
+        setCurrency(c.currency ?? "ARS");
+      }
+      setLoadingCompany(false);
+    });
+  }, [user]);
+
+  async function handleSave() {
+    if (tab === "negocio" && user) {
+      setSaving(true);
+      try {
+        await updateCompany(user.id, {
+          name,
+          cuit: cuit || null,
+          email: email || null,
+          phone: phone || null,
+          address: address || null,
+          industry,
+          tax_regime: taxRegime,
+          currency,
+        });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    window.location.href = "/login";
   }
 
   return (
@@ -121,7 +192,6 @@ export default function ConfiguracionPage() {
           <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Configuración</h1>
           <p className="text-sm text-[#64748B] mt-1">Personalizá Neto.app para tu negocio</p>
         </div>
-        <SaveButton saved={saved} />
       </div>
 
       <div className="flex gap-6">
@@ -150,19 +220,26 @@ export default function ConfiguracionPage() {
           {tab === "negocio" && (
             <>
               <h2 className="text-sm font-semibold text-[#F1F5F9] border-b border-white/[0.06] pb-4">Datos del negocio</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <InputField label="Nombre del negocio" value="Mi Marca" />
-                <InputField label="CUIT / CUIL" placeholder="20-12345678-9" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <SelectField label="Tipo de negocio" options={["Ecommerce", "Negocio físico", "Mixto"]} value="Mixto" />
-                <SelectField label="Rubro" options={["Indumentaria", "Electrónica", "Alimentos", "Hogar", "Otro"]} value="Indumentaria" />
-              </div>
-              <InputField label="Moneda base" value="ARS (Peso Argentino)" hint="Podés ver métricas en USD usando el tipo de cambio del día." />
-              <div className="grid grid-cols-2 gap-4">
-                <SelectField label="Provincia fiscal" options={["Córdoba", "Buenos Aires", "Santa Fe", "Mendoza", "Otra"]} value="Córdoba" />
-                <SelectField label="Condición frente al IVA" options={["Responsable Inscripto", "Monotributista", "Exento"]} />
-              </div>
+              {loadingCompany ? (
+                <p className="text-sm text-[#475569]">Cargando...</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <InputField label="Nombre del negocio" value={name} onChange={setName} />
+                    <InputField label="CUIT / CUIL" placeholder="20-12345678-9" value={cuit} onChange={setCuit} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <InputField label="Email de contacto" type="email" placeholder="contacto@minegocio.com" value={email} onChange={setEmail} />
+                    <InputField label="Teléfono" placeholder="+54 9 351 1234567" value={phone} onChange={setPhone} />
+                  </div>
+                  <InputField label="Dirección" placeholder="Calle 123, Córdoba" value={address} onChange={setAddress} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectField label="Rubro" options={INDUSTRIAS} value={industry} onChange={setIndustry} />
+                    <SelectField label="Condición frente al IVA" options={REGIMENES} value={taxRegime} onChange={setTaxRegime} />
+                  </div>
+                  <SelectField label="Moneda base" options={MONEDAS} value={currency} onChange={setCurrency} />
+                </>
+              )}
             </>
           )}
 
@@ -186,8 +263,12 @@ export default function ConfiguracionPage() {
             <>
               <h2 className="text-sm font-semibold text-[#F1F5F9] border-b border-white/[0.06] pb-4">Configuración fiscal</h2>
               <div className="grid grid-cols-2 gap-4">
-                <InputField label="CUIT del contribuyente" placeholder="20-12345678-9" />
-                <SelectField label="Categoría monotributo" options={["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]} value="H" />
+                <InputField label="CUIT del contribuyente" placeholder="20-12345678-9" value={cuit} onChange={setCuit} />
+                <SelectField
+                  label="Categoría monotributo"
+                  options={["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"].map((l) => ({ label: l, value: l }))}
+                  value="H"
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#94A3B8] mb-2">Jurisdicciones IIBB (Convenio Multilateral)</label>
@@ -260,22 +341,35 @@ export default function ConfiguracionPage() {
               <button className="text-sm text-[#EF4444] hover:opacity-80 transition-opacity font-medium">
                 Cancelar suscripción
               </button>
+
+              <div className="pt-4 border-t border-white/[0.06]">
+                <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-3">Cuenta</p>
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors font-medium"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
             </>
           )}
 
           {/* Save button bottom */}
-          <div className="pt-2 border-t border-white/[0.06] flex justify-end">
-            <button
-              onClick={handleSave}
-              className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
-                saved
-                  ? "bg-[#10B981]/10 text-[#10B981]"
-                  : "bg-[#10B981] text-[#080E1A] hover:bg-[#0D9268]"
-              }`}
-            >
-              {saved ? <><Check className="w-4 h-4" /> Guardado</> : "Guardar cambios"}
-            </button>
-          </div>
+          {tab !== "plan" && (
+            <div className="pt-2 border-t border-white/[0.06] flex justify-end">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-60 ${
+                  saved
+                    ? "bg-[#10B981]/10 text-[#10B981]"
+                    : "bg-[#10B981] text-[#080E1A] hover:bg-[#0D9268]"
+                }`}
+              >
+                {saved ? <><Check className="w-4 h-4" /> Guardado</> : saving ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

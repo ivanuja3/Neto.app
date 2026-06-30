@@ -1,18 +1,29 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./auth-provider";
+import { ensureCompany } from "@/lib/db/companies";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const ensuredFor = useRef<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (user && ensuredFor.current !== user.id) {
+      ensuredFor.current = user.id;
+      ensureCompany(user.id, user.email ?? null).catch(() => {
+        ensuredFor.current = null;
+      });
+    }
+  }, [user]);
 
   if (loading) {
     return (

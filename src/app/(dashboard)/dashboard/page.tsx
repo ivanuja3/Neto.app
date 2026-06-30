@@ -4,18 +4,24 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getKpisCurrentMonth, getPnlMonthly } from "@/lib/db/analytics";
 import { getSalesByChannel, getTopProducts } from "@/lib/db/orders";
+import Link from "next/link";
 import {
   TrendingUp,
   TrendingDown,
   Minus,
   ArrowUpRight,
+  ArrowRight,
   Store,
   ShoppingBag,
+  ShoppingCart,
+  Package,
+  Calculator,
   Target,
   BarChart3,
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Sparkles,
 } from "lucide-react";
 import {
   LineChart,
@@ -236,6 +242,51 @@ function Trend({ dir }: { dir: "up" | "down" | "neutral" }) {
   return <Minus className="w-4 h-4 text-[#475569]" />;
 }
 
+/* ─── Onboarding para usuarios nuevos ─── */
+const ONBOARDING_STEPS = [
+  { label: "Completá los datos de tu negocio", desc: "Nombre, CUIT, rubro y condición fiscal", href: "/configuracion", icon: Store },
+  { label: "Cargá tus productos", desc: "Precios, costos y stock de tu catálogo", href: "/inventario", icon: Package },
+  { label: "Registrá tu primera venta", desc: "Así empezás a ver tus métricas reales", href: "/ventas", icon: ShoppingCart },
+  { label: "Cargá tus costos fijos", desc: "Alquiler, sueldos, servicios y demás gastos", href: "/costos", icon: Calculator },
+];
+
+function WelcomeOnboarding() {
+  return (
+    <div className="bg-[#0C1424] border border-[#10B981]/20 rounded-2xl p-6 sm:p-8">
+      <div className="flex items-center gap-2 mb-2">
+        <Sparkles className="w-4 h-4 text-[#10B981]" />
+        <span className="text-xs font-bold text-[#10B981] uppercase tracking-wider">Bienvenido a Neto</span>
+      </div>
+      <h2 className="text-xl font-bold text-[#F1F5F9]">Empecemos a armar tu negocio</h2>
+      <p className="text-sm text-[#94A3B8] mt-1.5 max-w-lg">
+        Tu dashboard se va a llenar de datos reales a medida que completes estos pasos. No hace falta seguir el orden.
+      </p>
+
+      <div className="grid sm:grid-cols-2 gap-3 mt-6">
+        {ONBOARDING_STEPS.map((step) => {
+          const Icon = step.icon;
+          return (
+            <Link
+              key={step.href}
+              href={step.href}
+              className="group flex items-start gap-3 bg-[#080E1A] border border-white/[0.06] rounded-xl p-4 hover:border-[#10B981]/30 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-lg bg-[#10B981]/10 flex items-center justify-center shrink-0">
+                <Icon className="w-4 h-4 text-[#10B981]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#F1F5F9]">{step.label}</p>
+                <p className="text-xs text-[#475569] mt-0.5">{step.desc}</p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-[#475569] group-hover:text-[#10B981] group-hover:translate-x-0.5 transition-all shrink-0 mt-2.5" />
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Page ─── */
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -310,6 +361,8 @@ export default function DashboardPage() {
     ? +(100 - Number(lastPnl?.cm3_pct ?? 0)).toFixed(1)
     : 0;
 
+  const isNewUser = !loading && Number(kpiData?.ordenes ?? 0) === 0 && topProds.length === 0 && channels.length === 0;
+
   /* ── Render ── */
   return (
     <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
@@ -340,6 +393,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {!loading && isNewUser ? (
+        <WelcomeOnboarding />
+      ) : (
+      <>
       {/* KPI Grid */}
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -500,6 +557,8 @@ export default function DashboardPage() {
           <KpiCard label={kpiCards.ticketPromedio.label} value={kpiCards.ticketPromedio.value} unit={kpiCards.ticketPromedio.unit}
             change={kpiCards.ticketPromedio.change} changeLabel={kpiCards.ticketPromedio.changeLabel} icon={Store} accent="#A78BFA" />
         </div>
+      )}
+      </>
       )}
     </div>
   );
