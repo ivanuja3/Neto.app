@@ -207,7 +207,7 @@ export default function CostosPage() {
       }) => ({
         id:          e.id,
         nombre:      e.name,
-        categoria:   e.type as "fijo" | "variable",
+        categoria:   (e.type === "fixed" ? "fijo" : "variable") as "fijo" | "variable",
         tipo:        e.category ?? "General",
         valor:       toMonthly(e.amount, e.frequency),
         periodicidad: e.frequency,
