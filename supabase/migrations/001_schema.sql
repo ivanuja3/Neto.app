@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS companies (
   fiscal_year_start   integer NOT NULL DEFAULT 1,        -- mes 1-12
   tax_regime          text DEFAULT 'responsable_inscripto',
   industry            text DEFAULT 'ecommerce',
+  monthly_goal        numeric,
   created_at          timestamptz NOT NULL DEFAULT now(),
   updated_at          timestamptz NOT NULL DEFAULT now(),
   UNIQUE(user_id)                                        -- 1 empresa por usuario (por ahora)
