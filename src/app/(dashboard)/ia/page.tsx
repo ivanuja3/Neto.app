@@ -7,7 +7,7 @@ const SUGGESTED = [
   "¿Cuál es mi producto más rentable este mes?",
   "¿Estoy gastando demasiado en ads?",
   "¿Cuánto necesito vender para cubrir mis costos fijos?",
-  "Explicame mi CM3 en palabras simples",
+  "Explicame mi margen neto en palabras simples",
 ];
 
 type Message = { role: "user" | "assistant"; content: string };

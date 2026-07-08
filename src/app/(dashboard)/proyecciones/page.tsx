@@ -223,7 +223,7 @@ export default function ProyeccionesPage() {
             style={{ borderColor: `${cfg.color}20` }}>
             <p className="text-xs text-[#475569]">Ganancia proyectada</p>
             <p className="text-2xl font-bold font-mono text-[#F1F5F9] mt-1">{formatARS(gananciaTotal)}</p>
-            <p className="text-xs text-[#64748B] mt-1">CM3 prom. {cm3Prom}%</p>
+            <p className="text-xs text-[#64748B] mt-1">Margen Neto prom. {cm3Prom}%</p>
           </div>
         </div>
         <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.06] pointer-events-none">
@@ -235,7 +235,7 @@ export default function ProyeccionesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: "Facturación total Jul–Dic",    value: formatARS(totalProyectado), sub: "Suma de 6 meses proyectados",             color: cfg.color,  icon: TrendingUp },
-          { label: "CM3 promedio proyectado",       value: `${cm3Prom}%`,             sub: `Hoy: ${cm3Actual}% (+${(cm3Prom - cm3Actual).toFixed(1)}pp)`, color: "#3B82F6", icon: Target },
+          { label: "Margen Neto promedio proyectado", value: `${cm3Prom}%`,             sub: `Hoy: ${cm3Actual}% (+${(cm3Prom - cm3Actual).toFixed(1)}pp)`, color: "#3B82F6", icon: Target },
           { label: "Ganancia neta proyectada",      value: formatARS(gananciaTotal),  sub: `~${formatARS(Math.round(gananciaTotal / 6))}/mes en promedio`, color: "#10B981", icon: Zap },
           { label: "Ingreso mensual en Dic 2026",   value: formatARS(dicIngreso),     sub: `+${crecDic}% vs mes actual`,              color: "#8B5CF6",  icon: Sparkles },
         ].map((k) => {
@@ -308,7 +308,7 @@ export default function ProyeccionesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/[0.04]">
-                {["Mes", "Ingresos proy.", "CM3", "Ganancia neta", "Ads sugeridos", "vs hoy"].map((col) => (
+                {["Mes", "Ingresos proy.", "Margen Neto", "Ganancia neta", "Ads sugeridos", "vs hoy"].map((col) => (
                   <th key={col} className="text-left text-xs font-medium text-[#475569] px-5 py-3">{col}</th>
                 ))}
               </tr>

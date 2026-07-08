@@ -18,7 +18,7 @@ const STEPS = [
     icon: LayoutDashboard,
     accent: "#10B981",
     title: "Dashboard",
-    desc: "Es tu pantalla principal. Vas a ver ingresos, margen neto (CM3), ROAS real y MER en tiempo real. También un semáforo que te dice si tu negocio está saludable.",
+    desc: "Es tu pantalla principal. Vas a ver ingresos, margen neto, ROAS real y MER en tiempo real. También un semáforo que te dice si tu negocio está saludable.",
     hint: "Menú → Dashboard",
   },
   {

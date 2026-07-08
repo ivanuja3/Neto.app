@@ -8,7 +8,7 @@ export const kpis = {
   },
   cm3: {
     value: 28.4,
-    label: "CM3 (Margen neto)",
+    label: "Margen Neto",
     change: +2.1,
     changeLabel: "+2.1pp",
     unit: "%",

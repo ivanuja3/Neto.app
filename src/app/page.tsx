@@ -234,8 +234,8 @@ export default function LandingPage() {
     },
     {
       icon: TrendingUp,
-      title: "Márgenes reales CM1/CM2/CM3",
-      desc: "Calculá tu contribución marginal después de costos, logística y marketing. Sabé qué producto te conviene.",
+      title: "Márgenes reales: Bruto, Operativo y Neto",
+      desc: "Calculá cuánto te queda después de costos, logística y marketing. Sabé qué producto te conviene.",
       accent: B,
     },
     {
@@ -303,7 +303,7 @@ export default function LandingPage() {
   const planFeatures = [
     "Dashboard con KPIs en tiempo real",
     "Ventas, inventario, clientes y proveedores",
-    "Márgenes CM1, CM2 y CM3",
+    "Márgenes: Bruto, Operativo y Neto",
     "Flujo de caja y proyecciones 6 meses",
     "Integración con Tienda Nube",
     "Seguimiento de Meta Ads y ROAS",
@@ -436,7 +436,7 @@ export default function LandingPage() {
                 emoji: "🤷",
                 title: "Sin saber el margen real",
                 desc: "Vendiste $500.000 pero después de costos, envíos y publicidad ¿qué te quedó?",
-                fix: "Neto calcula CM1, CM2 y CM3 en tiempo real.",
+                fix: "Neto calcula Margen Bruto, Operativo y Neto en tiempo real.",
               },
               {
                 emoji: "📦",

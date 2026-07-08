@@ -195,7 +195,7 @@ function ChartTooltip({ active, payload, label }: {
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 mb-1 last:mb-0">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
-          <span className="text-[#64748B]">{p.name === "ingresos" ? "Ingresos" : "CM3"}:</span>
+          <span className="text-[#64748B]">{p.name === "ingresos" ? "Ingresos" : "Margen Neto"}:</span>
           <span className="text-[#F1F5F9] font-mono font-semibold ml-auto pl-3">
             {p.name === "ingresos" ? formatARS(p.value) : `${p.value}%`}
           </span>
@@ -271,7 +271,7 @@ function SaludNegocio({ cm3, roas, costosPct }: { cm3: number; roas: number; cos
         </div>
       </div>
       <div className="mt-3 divide-y divide-white/[0.04]">
-        <SaludIndicator label="Margen neto (CM3)" value={`${cm3.toFixed(1)}%`} estado={cm3Estado}
+        <SaludIndicator label="Margen Neto" value={`${cm3.toFixed(1)}%`} estado={cm3Estado}
           detalle={cm3Estado === "verde" ? "Saludable — por encima del 25%" : cm3Estado === "amarillo" ? "Zona de atención — objetivo: superar 25%" : "Crítico — estás perdiendo rentabilidad"} />
         <SaludIndicator label="ROAS Real (post-comisiones)" value={`${roas.toFixed(1)}x`} estado={roasEstado}
           detalle={roasEstado === "verde" ? "Ads rentables — por encima de 2.5x" : roasEstado === "amarillo" ? "Ads en zona gris — revisá creativos o audiencias" : "Ads quemando plata — pausar y reestructurar"} />
@@ -762,7 +762,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.10] transition-colors">
           <div className="flex items-start justify-between mb-5">
             <div>
-              <h2 className="text-sm font-semibold text-[#F1F5F9]">Ingresos y CM3</h2>
+              <h2 className="text-sm font-semibold text-[#F1F5F9]">Ingresos y Margen Neto</h2>
               <p className="text-xs text-[#475569] mt-0.5">Evolución últimos 6 meses</p>
             </div>
             <div className="flex items-center gap-4 text-xs">
@@ -772,7 +772,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-[2px] bg-[#3B82F6] rounded-full opacity-60" style={{ borderTop: "2px dashed #3B82F6", background: "none" }} />
-                <span className="text-[#64748B]">CM3 %</span>
+                <span className="text-[#64748B]">Margen Neto %</span>
               </div>
             </div>
           </div>

@@ -403,7 +403,7 @@ function ConfiguracionPageInner() {
               <h2 className="text-sm font-semibold text-[#F1F5F9] border-b border-white/[0.06] pb-4">Alertas automáticas</h2>
               <div>
                 <Toggle label="ROAS Real cae por debajo del objetivo" description="Recibís alerta cuando el ROAS real baja del umbral configurado" defaultChecked />
-                <Toggle label="CM3 mensual negativo" description="Aviso inmediato si el margen neto cae a cero" defaultChecked />
+                <Toggle label="Margen Neto mensual negativo" description="Aviso inmediato si el margen neto cae a cero" defaultChecked />
                 <Toggle label="Vencimientos fiscales (7 días de anticipación)" defaultChecked />
                 <Toggle label="Flujo de caja negativo semanal" description="Alerta si las salidas superan entradas en la semana" defaultChecked />
                 <Toggle label="Reporte semanal por email" description="Resumen de KPIs enviado todos los lunes" />

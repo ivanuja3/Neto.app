@@ -101,18 +101,18 @@ export default function MargenesPage() {
 
   const CM_LEVELS = mes ? [
     {
-      key: "CM1", label: "Contribución Marginal 1",
-      description: "Precio de venta − COGS (costo de mercadería vendida)",
+      key: "Bruto", label: "Margen Bruto",
+      description: "Lo que queda después de descontar el costo del producto vendido",
       value: mes.cm1, porcentaje: mes.cm1_pct, color: "#10B981",
     },
     {
-      key: "CM2", label: "Contribución Marginal 2",
-      description: "CM1 − inversión en Marketing y Logística",
+      key: "Operativo", label: "Margen Operativo",
+      description: "Margen Bruto menos inversión en Marketing y Logística",
       value: mes.cm2, porcentaje: mes.cm2_pct, color: "#3B82F6",
     },
     {
-      key: "CM3", label: "Contribución Marginal 3",
-      description: "CM2 − costos fijos del negocio (resultado operativo)",
+      key: "Neto", label: "Margen Neto",
+      description: "Lo que te queda al final, después de todos los gastos fijos",
       value: mes.cm3, porcentaje: mes.cm3_pct, color: "#8B5CF6",
     },
   ] : [];
@@ -122,7 +122,7 @@ export default function MargenesPage() {
     { categoria: "Marketing",    valor: mes.marketing,    porcentaje: mes.ingresos > 0 ? Math.round(mes.marketing / mes.ingresos * 100) : 0,    color: "#F59E0B" },
     { categoria: "Logística",    valor: mes.logistica,    porcentaje: mes.ingresos > 0 ? Math.round(mes.logistica / mes.ingresos * 100) : 0,    color: "#F97316" },
     { categoria: "Gastos fijos", valor: mes.gastos_fijos, porcentaje: mes.ingresos > 0 ? Math.round(mes.gastos_fijos / mes.ingresos * 100) : 0, color: "#6366F1" },
-    { categoria: "CM3 (Neto)",   valor: mes.cm3,          porcentaje: mes.cm3_pct,                                                              color: "#10B981", neto: true },
+    { categoria: "Margen Neto",  valor: mes.cm3,          porcentaje: mes.cm3_pct,                                                              color: "#10B981", neto: true },
   ] : [];
 
   const trendData = pnl.map((r) => ({
@@ -159,7 +159,7 @@ export default function MargenesPage() {
               Los márgenes no son reales todavía
             </p>
             <p className="text-xs text-[#94A3B8] mt-0.5">
-              Tenés ventas registradas pero los costos de productos están en $0. CM1, CM2 y CM3 aparecen inflados artificialmente.
+              Tenés ventas registradas pero los costos de productos están en $0. El Margen Bruto, Operativo y Neto aparecen inflados artificialmente.
             </p>
           </div>
           <Link href="/inventario"
@@ -262,7 +262,7 @@ export default function MargenesPage() {
         {/* Evolución CM% */}
         <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
           <h2 className="text-sm font-semibold text-[#F1F5F9] mb-1">Evolución de márgenes</h2>
-          <p className="text-xs text-[#475569] mb-5">CM1% · CM2% · CM3% por mes</p>
+          <p className="text-xs text-[#475569] mb-5">Bruto% · Operativo% · Neto% por mes</p>
           {loading ? (
             <div className="h-[200px] bg-white/[0.03] rounded-lg animate-pulse" />
           ) : (
@@ -273,12 +273,12 @@ export default function MargenesPage() {
                 <YAxis tick={{ fill: "#475569", fontSize: 10 }} axisLine={false} tickLine={false}
                   tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
                 <Tooltip
-                  formatter={(v, name) => [`${Number(v).toFixed(1)}%`, name === "cm1_pct" ? "CM1" : name === "cm2_pct" ? "CM2" : "CM3"]}
+                  formatter={(v, name) => [`${Number(v).toFixed(1)}%`, name === "cm1_pct" ? "Bruto" : name === "cm2_pct" ? "Operativo" : "Neto"]}
                   contentStyle={{ background: "#0D1829", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, color: "#F1F5F9", fontSize: 12 }} />
                 <ReferenceLine y={30} stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
-                <Bar dataKey="cm1_pct" name="CM1" fill="#10B981" opacity={0.5} radius={[3, 3, 0, 0]} />
-                <Bar dataKey="cm2_pct" name="CM2" fill="#3B82F6" opacity={0.7} radius={[3, 3, 0, 0]} />
-                <Bar dataKey="cm3_pct" name="CM3" radius={[3, 3, 0, 0]}>
+                <Bar dataKey="cm1_pct" name="Bruto" fill="#10B981" opacity={0.5} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="cm2_pct" name="Operativo" fill="#3B82F6" opacity={0.7} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="cm3_pct" name="Neto" radius={[3, 3, 0, 0]}>
                   {trendData.map((entry) => (
                     <Cell key={entry.mes}
                       fill={entry.cm3_pct >= 20 ? "#8B5CF6" : entry.cm3_pct >= 10 ? "#F59E0B" : "#EF4444"}
@@ -290,7 +290,7 @@ export default function MargenesPage() {
           )}
           {!loading && (
             <div className="flex items-center gap-4 mt-3 justify-center">
-              {[{ label: "CM1", color: "#10B981" }, { label: "CM2", color: "#3B82F6" }, { label: "CM3", color: "#8B5CF6" }].map((l) => (
+              {[{ label: "Bruto", color: "#10B981" }, { label: "Operativo", color: "#3B82F6" }, { label: "Neto", color: "#8B5CF6" }].map((l) => (
                 <div key={l.label} className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-sm" style={{ background: l.color }} />
                   <span className="text-[10px] text-[#475569]">{l.label}</span>
