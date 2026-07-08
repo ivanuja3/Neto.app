@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getKpisCurrentMonth, getAnalyticLines } from "@/lib/db/analytics";
-import { CheckCircle, Clock, AlertCircle, ExternalLink, Info } from "lucide-react";
+import { getOrders } from "@/lib/db/orders";
+import { CheckCircle, Clock, AlertCircle, ExternalLink, Info, FileText, X, Zap, ShoppingCart, ChevronDown } from "lucide-react";
 import { formatARS } from "@/lib/mock-data";
+import type { Order } from "@/lib/types/database";
 
 type EstadoVencimiento = "pagado" | "pendiente" | "vencido";
 
@@ -86,22 +88,39 @@ function buildObligaciones(ingresos: number): ObligacionFiscal[] {
   ];
 }
 
+const TIPO_COMPROBANTE = ["A", "B", "C"] as const;
+type TipoComp = typeof TIPO_COMPROBANTE[number];
+
+const COND_IVA = ["Responsable Inscripto", "Monotributista", "Consumidor Final", "Exento"];
+
 export default function ImpuestosPage() {
   const { user } = useAuth();
-  const [tab,          setTab]          = useState<"obligaciones" | "cm">("obligaciones");
+  const [tab,          setTab]          = useState<"obligaciones" | "cm" | "facturacion">("obligaciones");
   const [loading,      setLoading]      = useState(true);
   const [ingresosMes,  setIngresosMes]  = useState(0);
   const [pagosLineas,  setPagosLineas]  = useState<AnalyticLine[]>([]);
+  const [orders,       setOrders]       = useState<Order[]>([]);
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
+  const [invoiceForm,  setInvoiceForm]  = useState({
+    tipo:           "B" as TipoComp,
+    puntoVenta:     "0001",
+    clienteNombre:  "",
+    clienteCuit:    "",
+    condIva:        "Consumidor Final",
+  });
+  const setInv = (k: string, v: string) => setInvoiceForm((f) => ({ ...f, [k]: v }));
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [kpiRes, lineRes] = await Promise.all([
+      const [kpiRes, lineRes, ordRes] = await Promise.all([
         getKpisCurrentMonth(user!.id),
         getAnalyticLines(user!.id, { category: "impuesto" }),
+        getOrders(user!.id, { limit: 20 }),
       ]);
       setIngresosMes(Number(kpiRes.data?.[0]?.ingresos ?? 0));
       setPagosLineas((lineRes.data ?? []).map((l: AnalyticLine) => ({ ...l, amount: Number(l.amount) })));
+      setOrders((ordRes as { data: Order[] | null }).data ?? []);
       setLoading(false);
     }
     load();
@@ -168,13 +187,19 @@ export default function ImpuestosPage() {
 
       {/* Tabs */}
       <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl">
-        <div className="flex items-center gap-1 px-5 py-4 border-b border-white/[0.06]">
-          {(["obligaciones", "cm"] as const).map((t) => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === t ? "bg-[#10B981]/10 text-[#10B981]" : "text-[#475569] hover:text-[#94A3B8]"}`}>
-              {t === "obligaciones" ? "Calendario fiscal" : "Convenio Multilateral"}
-            </button>
-          ))}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-1">
+            {([
+              { key: "obligaciones", label: "Calendario fiscal" },
+              { key: "cm",           label: "Convenio Multilateral" },
+              { key: "facturacion",  label: "Facturación electrónica" },
+            ] as const).map((t) => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === t.key ? "bg-[#10B981]/10 text-[#10B981]" : "text-[#475569] hover:text-[#94A3B8]"}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {tab === "obligaciones" ? (
@@ -276,7 +301,246 @@ export default function ImpuestosPage() {
             )}
           </div>
         )}
+        {tab === "facturacion" && (
+          <div className="divide-y divide-white/[0.04]">
+            {/* Banner ARCA */}
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between bg-[#F59E0B]/[0.08] border border-[#F59E0B]/20 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <Zap className="w-4 h-4 text-[#F59E0B] shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#F59E0B]">ARCA no conectado</p>
+                    <p className="text-xs text-[#94A3B8] mt-0.5">Conectá tu clave fiscal para emitir comprobantes electrónicos directamente desde Neto.</p>
+                  </div>
+                </div>
+                <button className="shrink-0 text-xs font-semibold text-[#080E1A] bg-[#F59E0B] hover:bg-[#D97706] px-3 py-1.5 rounded-lg transition-colors">
+                  Conectar ARCA
+                </button>
+              </div>
+            </div>
+
+            {/* Ventas para facturar */}
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+                  <div className="w-32 h-3.5 bg-white/[0.06] rounded" />
+                  <div className="flex-1 h-3.5 bg-white/[0.04] rounded" />
+                  <div className="w-24 h-3.5 bg-white/[0.06] rounded" />
+                </div>
+              ))
+            ) : orders.length === 0 ? (
+              <div className="px-5 py-12 text-center">
+                <ShoppingCart className="w-8 h-8 text-[#334155] mx-auto mb-3" />
+                <p className="text-sm font-semibold text-[#475569]">Sin ventas registradas</p>
+                <p className="text-xs text-[#334155] mt-1">Registrá una venta desde la sección Ventas para poder facturarla.</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-5 px-5 py-2 bg-white/[0.02]">
+                  {["Fecha", "Canal", "Total", "Estado pago", ""].map((h) => (
+                    <p key={h} className="text-[11px] font-medium text-[#475569]">{h}</p>
+                  ))}
+                </div>
+                {orders.map((o) => (
+                  <div key={o.id} className="grid grid-cols-5 items-center px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
+                    <p className="text-[13px] text-[#F1F5F9]">{o.date}</p>
+                    <p className="text-[13px] text-[#94A3B8] capitalize">{o.channel}</p>
+                    <p className="text-[13px] font-mono font-semibold text-[#F1F5F9]">{formatARS(Number(o.amount_total))}</p>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded w-fit ${
+                      o.payment_state === "paid" ? "bg-[#10B981]/15 text-[#10B981]" : "bg-[#F59E0B]/15 text-[#F59E0B]"
+                    }`}>
+                      {o.payment_state === "paid" ? "Cobrado" : "Pendiente"}
+                    </span>
+                    <button
+                      onClick={() => { setInvoiceOrder(o); setInvoiceForm(f => ({ ...f, clienteNombre: "", clienteCuit: "" })); }}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-[#3B82F6] hover:text-[#60A5FA] transition-colors justify-end"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Facturar
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Modal facturación */}
+      {invoiceOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#0C1424] border border-white/[0.10] rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+              <div>
+                <h2 className="text-base font-bold text-[#F1F5F9]">Emitir comprobante electrónico</h2>
+                <p className="text-xs text-[#475569] mt-0.5">Venta del {invoiceOrder.date} · {formatARS(Number(invoiceOrder.amount_total))}</p>
+              </div>
+              <button onClick={() => setInvoiceOrder(null)} className="text-[#475569] hover:text-[#94A3B8] transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+              {/* Formulario */}
+              <div className="px-6 py-5 space-y-4 border-r border-white/[0.06]">
+                <p className="text-xs font-semibold text-[#475569] uppercase tracking-widest">Datos del comprobante</p>
+
+                <div>
+                  <p className="text-xs text-[#475569] mb-2">Tipo de comprobante</p>
+                  <div className="flex gap-2">
+                    {TIPO_COMPROBANTE.map((t) => (
+                      <button key={t} onClick={() => setInv("tipo", t)}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                          invoiceForm.tipo === t
+                            ? "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30"
+                            : "bg-white/[0.03] text-[#475569] border-white/[0.06] hover:border-white/[0.14]"
+                        }`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-[#334155] mt-1.5">
+                    {invoiceForm.tipo === "A" ? "Responsable Inscripto → Responsable Inscripto (con IVA discriminado)" :
+                     invoiceForm.tipo === "B" ? "RI/Monotributista → Consumidor Final / Monotributista" :
+                     "Monotributista → cualquier destinatario"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-[#475569] mb-1.5">Punto de venta</p>
+                    <input value={invoiceForm.puntoVenta} onChange={(e) => setInv("puntoVenta", e.target.value)}
+                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] font-mono focus:outline-none focus:border-[#3B82F6]/40" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#475569] mb-1.5">Condición IVA receptor</p>
+                    <div className="relative">
+                      <select value={invoiceForm.condIva} onChange={(e) => setInv("condIva", e.target.value)}
+                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none focus:border-[#3B82F6]/40 appearance-none">
+                        {COND_IVA.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#475569] pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#475569] mb-1.5">Nombre / Razón social del receptor</p>
+                  <input value={invoiceForm.clienteNombre} onChange={(e) => setInv("clienteNombre", e.target.value)}
+                    placeholder="Consumidor Final" className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none focus:border-[#3B82F6]/40" />
+                </div>
+
+                <div>
+                  <p className="text-xs text-[#475569] mb-1.5">CUIT del receptor</p>
+                  <input value={invoiceForm.clienteCuit} onChange={(e) => setInv("clienteCuit", e.target.value)}
+                    placeholder="00-00000000-0" className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] font-mono focus:outline-none focus:border-[#3B82F6]/40" />
+                </div>
+
+                <div className="pt-2">
+                  <button disabled className="w-full py-3 rounded-xl text-sm font-semibold bg-[#3B82F6]/20 text-[#3B82F6]/50 border border-[#3B82F6]/20 cursor-not-allowed flex items-center justify-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Emitir comprobante vía ARCA
+                  </button>
+                  <p className="text-[11px] text-[#475569] text-center mt-2">Conectá ARCA en Configuración para habilitar la emisión</p>
+                </div>
+              </div>
+
+              {/* Preview comprobante */}
+              <div className="px-6 py-5">
+                <p className="text-xs font-semibold text-[#475569] uppercase tracking-widest mb-4">Vista previa del comprobante</p>
+                <div className="border border-white/[0.12] rounded-xl overflow-hidden text-[12px]">
+                  {/* Comprobante header */}
+                  <div className="grid grid-cols-3 border-b border-white/[0.10]">
+                    <div className="col-span-1 px-4 py-3 border-r border-white/[0.10]">
+                      <p className="font-bold text-[#F1F5F9] text-[11px]">MI EMPRESA</p>
+                      <p className="text-[#475569] text-[10px] mt-0.5">CUIT: 30-00000000-0</p>
+                      <p className="text-[#475569] text-[10px]">Ing. Brutos: 000-000000-0</p>
+                      <p className="text-[#475569] text-[10px] mt-1">Responsable Inscripto</p>
+                    </div>
+                    <div className="col-span-1 flex flex-col items-center justify-center py-3 border-r border-white/[0.10]">
+                      <span className="text-3xl font-black text-[#3B82F6]">{invoiceForm.tipo}</span>
+                      <p className="text-[10px] text-[#475569] mt-0.5">FACTURA</p>
+                    </div>
+                    <div className="col-span-1 px-4 py-3">
+                      <p className="text-[#475569] text-[10px]">Pto. Venta: <span className="text-[#F1F5F9] font-mono">{invoiceForm.puntoVenta.padStart(4,"0")}</span></p>
+                      <p className="text-[#475569] text-[10px]">Nro: <span className="text-[#F1F5F9] font-mono">00000001</span></p>
+                      <p className="text-[#475569] text-[10px] mt-1">Fecha: <span className="text-[#F1F5F9]">{invoiceOrder.date}</span></p>
+                    </div>
+                  </div>
+
+                  {/* Receptor */}
+                  <div className="px-4 py-3 border-b border-white/[0.10] bg-white/[0.02]">
+                    <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wider mb-1">Receptor</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      <p className="text-[11px] text-[#F1F5F9]">
+                        <span className="text-[#475569]">Nombre: </span>
+                        {invoiceForm.clienteNombre || "Consumidor Final"}
+                      </p>
+                      <p className="text-[11px] text-[#F1F5F9]">
+                        <span className="text-[#475569]">CUIT: </span>
+                        <span className="font-mono">{invoiceForm.clienteCuit || "00-00000000-0"}</span>
+                      </p>
+                      <p className="text-[11px] text-[#F1F5F9] col-span-2">
+                        <span className="text-[#475569]">Condición IVA: </span>
+                        {invoiceForm.condIva}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Items */}
+                  <div className="px-4 py-3 border-b border-white/[0.10]">
+                    <div className="grid grid-cols-4 text-[10px] text-[#475569] font-semibold uppercase mb-2">
+                      <p className="col-span-2">Descripción</p>
+                      <p className="text-right">Precio unit.</p>
+                      <p className="text-right">Subtotal</p>
+                    </div>
+                    <div className="grid grid-cols-4 text-[11px]">
+                      <p className="col-span-2 text-[#F1F5F9]">Venta {invoiceOrder.channel}</p>
+                      <p className="text-right font-mono text-[#94A3B8]">{formatARS(Number(invoiceOrder.amount_total))}</p>
+                      <p className="text-right font-mono text-[#F1F5F9] font-semibold">{formatARS(Number(invoiceOrder.amount_total))}</p>
+                    </div>
+                  </div>
+
+                  {/* Totales */}
+                  <div className="px-4 py-3 border-b border-white/[0.10] space-y-1">
+                    {invoiceForm.tipo === "A" && (
+                      <>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-[#475569]">Neto gravado</span>
+                          <span className="font-mono text-[#F1F5F9]">{formatARS(Math.round(Number(invoiceOrder.amount_total) / 1.21))}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-[#475569]">IVA 21%</span>
+                          <span className="font-mono text-[#F1F5F9]">{formatARS(Math.round(Number(invoiceOrder.amount_total) - Number(invoiceOrder.amount_total) / 1.21))}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between text-[13px] font-bold pt-1 border-t border-white/[0.06]">
+                      <span className="text-[#F1F5F9]">TOTAL</span>
+                      <span className="font-mono text-[#10B981]">{formatARS(Number(invoiceOrder.amount_total))}</span>
+                    </div>
+                  </div>
+
+                  {/* CAE */}
+                  <div className="px-4 py-3 bg-white/[0.02]">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-[#475569]">CAE: <span className="font-mono text-[#334155] tracking-widest">__ __ __ __ __ __ __</span></p>
+                        <p className="text-[10px] text-[#475569] mt-0.5">Vto. CAE: ___/___/______</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-[#F59E0B] font-semibold">
+                        <Zap className="w-3 h-3" />
+                        Pendiente de emisión
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pagos registrados en analytic_lines */}
       {!loading && pagosLineas.length > 0 && (

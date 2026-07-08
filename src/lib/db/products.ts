@@ -40,12 +40,13 @@ export async function createProduct(product: TablesInsert<"products">) {
 
   if (!error && data) {
     const typed = data as Product;
-    await db.from("inventory_levels").insert({
+    const { error: lvlErr } = await db.from("inventory_levels").insert({
       user_id: product.user_id,
       product_id: typed.id,
       qty_on_hand: 0,
       avg_cost: product.standard_cost ?? 0,
     });
+    if (lvlErr) console.error("createProduct: inventory_levels insert failed", lvlErr);
   }
 
   return { data: data as Product | null, error };

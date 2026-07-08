@@ -11,6 +11,9 @@ export async function getOrders(userId: string, options?: {
   channel?: string;
   state?: string;
   limit?: number;
+  dateFrom?: string;   // YYYY-MM-DD
+  dateTo?: string;     // YYYY-MM-DD
+  paymentMethod?: string;
 }) {
   let query = db
     .from("orders")
@@ -18,10 +21,13 @@ export async function getOrders(userId: string, options?: {
     .eq("user_id", userId)
     .order("date", { ascending: false });
 
-  if (options?.channel) query = query.eq("channel", options.channel);
-  if (options?.state)   query = query.eq("state", options.state);
-  if (options?.limit)   query = query.limit(options.limit);
-  if (options?.months) {
+  if (options?.channel)       query = query.eq("channel", options.channel);
+  if (options?.state)         query = query.eq("state", options.state);
+  if (options?.limit)         query = query.limit(options.limit);
+  if (options?.paymentMethod) query = query.eq("payment_method", options.paymentMethod);
+  if (options?.dateFrom)      query = query.gte("date", options.dateFrom);
+  if (options?.dateTo)        query = query.lte("date", options.dateTo);
+  if (options?.months && !options?.dateFrom) {
     const since = new Date();
     since.setMonth(since.getMonth() - options.months);
     query = query.gte("date", since.toISOString().split("T")[0]);
@@ -59,7 +65,11 @@ export async function createOrder(
       order_id: typed.id,
       user_id: order.user_id,
     }));
-    await db.from("order_items").insert(itemsWithOrderId);
+    const { error: itemsErr } = await db.from("order_items").insert(itemsWithOrderId);
+    if (itemsErr) {
+      console.error("createOrder: order_items insert failed", itemsErr);
+      return null;
+    }
   }
 
   return typed;

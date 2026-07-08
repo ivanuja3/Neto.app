@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { getProducts, getRecentStockMoves, getProductCategories, createProduct, registerStockMove } from "@/lib/db/products";
+import { getProducts, getRecentStockMoves, getProductCategories, createProduct, updateProduct, registerStockMove } from "@/lib/db/products";
 import { getTopProducts } from "@/lib/db/orders";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PlusCircle, AlertTriangle, ArrowUp, ArrowDown, Package } from "lucide-react";
+import { PlusCircle, AlertTriangle, ArrowUp, ArrowDown, Package, Pencil, Upload, Search, X, TrendingUp } from "lucide-react";
+import { ProductImport } from "@/components/product-import";
 import { formatARS, formatNumber } from "@/lib/mock-data";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -36,7 +37,7 @@ function catColor(cat: string) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ProductWithStock = { id: string; name: string; sku: string; standard_cost: number; category: { name: string } | null; stock: { qty_on_hand: number; avg_cost: number }[] };
+type ProductWithStock = { id: string; name: string; sku: string; list_price: number; price_cash: number | null; price_installments: number | null; standard_cost: number; category: { id?: string; name: string } | null; stock: { qty_on_hand: number; avg_cost: number }[] };
 type StockMove = { id: string; type: string; qty: number; date: string; notes: string | null; product: { name: string; sku: string } | null };
 type ProductCategory = { id: string; name: string };
 
@@ -46,12 +47,14 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
   const [error,      setError]      = useState("");
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [form, setForm] = useState({
-    nombre:     "",
-    sku:        "",
-    categoria:  "",
-    precio:     "",
-    costo:      "",
-    stockInicial: "0",
+    nombre:              "",
+    sku:                 "",
+    categoria:           "",
+    precio:              "",
+    precioCash:          "",
+    precioInstallments:  "",
+    costo:               "",
+    stockInicial:        "0",
   });
 
   useEffect(() => {
@@ -67,17 +70,19 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
     setError("");
 
     const { data: prod, error: prodErr } = await createProduct({
-      user_id:       userId,
-      name:          form.nombre.trim(),
-      sku:           form.sku.trim() || `SKU-${Date.now()}`,
-      category_id:   form.categoria || null,
-      list_price:    parseFloat(form.precio) || 0,
-      standard_cost: parseFloat(form.costo)  || 0,
-      active:        true,
-      type:          "physical",
-      notes:         null,
-      barcode:       null,
-      image_url:     null,
+      user_id:            userId,
+      name:               form.nombre.trim(),
+      sku:                form.sku.trim() || `SKU-${Date.now()}`,
+      category_id:        form.categoria || null,
+      list_price:         parseFloat(form.precio) || 0,
+      price_cash:         parseFloat(form.precioCash) || null,
+      price_installments: parseFloat(form.precioInstallments) || null,
+      standard_cost:      parseFloat(form.costo) || 0,
+      active:             true,
+      type:               "physical",
+      notes:              null,
+      barcode:            null,
+      image_url:          null,
     });
 
     if (prodErr || !prod) { setError("Error al guardar el producto"); setSaving(false); return; }
@@ -94,9 +99,10 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
         notes:      "Stock inicial",
         ref_type:   "manual",
         ref_id:     null,
-      });
+      }).catch((err) => console.error("registerStockMove error:", err));
     }
 
+    setSaving(false);
     onSaved();
     onClose();
   }
@@ -121,16 +127,25 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
         </select>
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Precio de venta ($)">
+      <div className="grid grid-cols-3 gap-3">
+        <Field label="Precio lista ($)">
           <input type="number" min="0" step="0.01" value={form.precio}
             onChange={(e) => set("precio", e.target.value)} placeholder="15000" className={inputCls} />
         </Field>
-        <Field label="Costo unitario ($)">
-          <input type="number" min="0" step="0.01" value={form.costo}
-            onChange={(e) => set("costo", e.target.value)} placeholder="7000" className={inputCls} />
+        <Field label="Precio efectivo ($)">
+          <input type="number" min="0" step="0.01" value={form.precioCash}
+            onChange={(e) => set("precioCash", e.target.value)} placeholder="Opcional" className={inputCls} />
+        </Field>
+        <Field label="Precio cuotas ($)">
+          <input type="number" min="0" step="0.01" value={form.precioInstallments}
+            onChange={(e) => set("precioInstallments", e.target.value)} placeholder="Opcional" className={inputCls} />
         </Field>
       </div>
+
+      <Field label="Costo unitario ($)">
+        <input type="number" min="0" step="0.01" value={form.costo}
+          onChange={(e) => set("costo", e.target.value)} placeholder="7000" className={inputCls} />
+      </Field>
 
       <Field label="Stock inicial (unidades)">
         <input type="number" min="0" step="1" value={form.stockInicial}
@@ -143,6 +158,113 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
   );
 }
 
+type EditProductoProps = {
+  userId: string;
+  product: { id: string; nombre: string; sku: string; precio: number; precioCash: number | null; precioInstallments: number | null; costo: number; categoria: string; categoriaId?: string };
+  onSaved: () => void;
+  onClose: () => void;
+};
+
+function FormEditarProducto({ userId, product, onSaved, onClose }: EditProductoProps) {
+  const [saving,     setSaving]     = useState(false);
+  const [error,      setError]      = useState("");
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [form, setForm] = useState({
+    nombre:             product.nombre,
+    sku:                product.sku ?? "",
+    categoria:          product.categoriaId ?? "",
+    precio:             String(product.precio),
+    precioCash:         product.precioCash != null ? String(product.precioCash) : "",
+    precioInstallments: product.precioInstallments != null ? String(product.precioInstallments) : "",
+    costo:              String(product.costo),
+  });
+
+  useEffect(() => {
+    getProductCategories(userId).then((r: { data: ProductCategory[] | null }) => setCategories(r.data ?? []));
+  }, [userId]);
+
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.nombre.trim()) { setError("El nombre es obligatorio"); return; }
+    setSaving(true);
+    setError("");
+    const { error: dbErr } = await updateProduct(product.id, {
+      name:               form.nombre.trim(),
+      sku:                form.sku.trim() || undefined,
+      category_id:        form.categoria || null,
+      list_price:         parseFloat(form.precio) || 0,
+      price_cash:         parseFloat(form.precioCash) || null,
+      price_installments: parseFloat(form.precioInstallments) || null,
+      standard_cost:      parseFloat(form.costo) || 0,
+    });
+    if (dbErr) { setError("Error al guardar. Intentá de nuevo."); setSaving(false); return; }
+    setSaving(false);
+    onSaved();
+    onClose();
+  }
+
+  const precio = parseFloat(form.precio) || 0;
+  const costo  = parseFloat(form.costo)  || 0;
+  const margen = precio > 0 ? ((precio - costo) / precio * 100).toFixed(1) : null;
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Nombre del producto">
+          <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)}
+            placeholder="Ej: Remera básica blanca" className={inputCls} />
+        </Field>
+        <Field label="SKU">
+          <input value={form.sku} onChange={(e) => set("sku", e.target.value)}
+            placeholder="Ej: REM-BLC-M" className={inputCls} />
+        </Field>
+      </div>
+
+      <Field label="Categoría">
+        <select value={form.categoria} onChange={(e) => set("categoria", e.target.value)} className={selectCls}>
+          <option value="">Sin categoría</option>
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </Field>
+
+      <div className="grid grid-cols-3 gap-3">
+        <Field label="Precio lista ($)">
+          <input type="number" min="0" step="0.01" value={form.precio}
+            onChange={(e) => set("precio", e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Precio efectivo ($)">
+          <input type="number" min="0" step="0.01" value={form.precioCash}
+            onChange={(e) => set("precioCash", e.target.value)} placeholder="Opcional" className={inputCls} />
+        </Field>
+        <Field label="Precio cuotas ($)">
+          <input type="number" min="0" step="0.01" value={form.precioInstallments}
+            onChange={(e) => set("precioInstallments", e.target.value)} placeholder="Opcional" className={inputCls} />
+        </Field>
+      </div>
+
+      <Field label="Costo unitario ($)">
+        <input type="number" min="0" step="0.01" value={form.costo}
+          onChange={(e) => set("costo", e.target.value)} className={inputCls} />
+      </Field>
+
+      {margen !== null && (
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-2.5 flex items-center justify-between">
+          <span className="text-xs text-[#475569]">Margen bruto estimado</span>
+          <span className="text-sm font-mono font-bold"
+            style={{ color: Number(margen) >= 40 ? "#10B981" : Number(margen) >= 20 ? "#F59E0B" : "#EF4444" }}>
+            {margen}%
+          </span>
+        </div>
+      )}
+
+      {error && <p className="text-xs text-[#EF4444] bg-[#EF4444]/[0.08] border border-[#EF4444]/20 rounded-lg px-3 py-2">{error}</p>}
+      <SaveButton saving={saving} label="Guardar cambios" />
+    </form>
+  );
+}
+
 export default function InventarioPage() {
   const { user } = useAuth();
   const [loading, setLoading]    = useState(true);
@@ -151,26 +273,38 @@ export default function InventarioPage() {
   const [qtyVendida, setQtyVendida] = useState<Record<string, number>>({});
   const [tab, setTab]            = useState<"todos" | "alerta" | "critico">("todos");
   const [modalOpen, setModalOpen] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [editProduct, setEditProduct] = useState<EditProductoProps["product"] | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [search, setSearch]      = useState("");
+  const [catFilter, setCatFilter] = useState<string>("todas");
+  const [showBulk, setShowBulk]  = useState(false);
+  const [bulkPct, setBulkPct]    = useState("");
+  const [bulkField, setBulkField] = useState<"list_price" | "price_cash" | "price_installments" | "standard_cost">("list_price");
+  const [bulkSaving, setBulkSaving] = useState(false);
   const refresh = () => setRefreshKey((k) => k + 1);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [prodRes, moveRes, topRes] = await Promise.all([
-        getProducts(user!.id),
-        getRecentStockMoves(user!.id, 12),
-        getTopProducts(user!.id, 100),
-      ]);
-      setProducts(prodRes.data ?? []);
-      setMoves(moveRes.data   ?? []);
-      // Build qty_vendida map from top products
-      const qmap: Record<string, number> = {};
-      for (const r of (topRes.data ?? [])) {
-        qmap[r.product_id] = Number(r.qty_vendida);
+      try {
+        const [prodRes, moveRes, topRes] = await Promise.all([
+          getProducts(user!.id),
+          getRecentStockMoves(user!.id, 12),
+          getTopProducts(user!.id, 100),
+        ]);
+        setProducts(prodRes.data ?? []);
+        setMoves(moveRes.data   ?? []);
+        const qmap: Record<string, number> = {};
+        for (const r of (topRes.data ?? [])) {
+          qmap[r.product_id] = Number(r.qty_vendida);
+        }
+        setQtyVendida(qmap);
+      } catch (err) {
+        console.error("InventarioPage load error:", err);
+      } finally {
+        setLoading(false);
       }
-      setQtyVendida(qmap);
-      setLoading(false);
     }
     load();
   }, [user, refreshKey]);
@@ -199,7 +333,17 @@ export default function InventarioPage() {
 
   const criticos = items.filter((i) => i.estado === "critico");
   const enAlerta = items.filter((i) => i.estado !== "ok");
-  const filtrados = tab === "todos" ? items : tab === "alerta" ? enAlerta : criticos;
+  const baseList  = tab === "todos" ? items : tab === "alerta" ? enAlerta : criticos;
+  const uniqueCats = Array.from(new Set(items.map((i) => i.categoria))).sort();
+  const filtrados = baseList
+    .filter((i) => catFilter === "todas" || i.categoria === catFilter)
+    .filter((i) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return i.nombre.toLowerCase().includes(q) || (i.sku ?? "").toLowerCase().includes(q);
+    });
+  const bulkTargets = catFilter === "todas" ? items : items.filter((i) => i.categoria === catFilter);
+  const bulkCount   = bulkTargets.length;
 
   const totalValor     = items.reduce((s, i) => s + i.valorStock, 0);
   const totalUnidades  = items.reduce((s, i) => s + i.stockActual, 0);
@@ -211,21 +355,66 @@ export default function InventarioPage() {
   const byCat     = items.reduce<Record<string, number>>((acc, i) => { acc[i.categoria] = (acc[i.categoria] ?? 0) + i.valorStock; return acc; }, {});
   const catData   = Object.entries(byCat).map(([categoria, valor]) => ({ categoria, valor })).sort((a, b) => b.valor - a.valor);
 
+  async function handleBulkUpdate() {
+    const pct = Number(bulkPct);
+    if (!pct || isNaN(pct)) return;
+    setBulkSaving(true);
+    for (const item of bulkTargets) {
+      const prod = products.find((p) => p.id === item.id);
+      if (!prod) continue;
+      if (bulkField === "list_price") {
+        await updateProduct(item.id, { list_price: Math.round(prod.list_price * (1 + pct / 100)) });
+      } else if (bulkField === "price_cash") {
+        const base = prod.price_cash ?? prod.list_price;
+        await updateProduct(item.id, { price_cash: Math.round(base * (1 + pct / 100)) });
+      } else if (bulkField === "price_installments") {
+        const base = prod.price_installments ?? prod.list_price;
+        await updateProduct(item.id, { price_installments: Math.round(base * (1 + pct / 100)) });
+      } else {
+        await updateProduct(item.id, { standard_cost: Math.round(item.costoUnitario * (1 + pct / 100)) });
+      }
+    }
+    setBulkSaving(false);
+    setShowBulk(false);
+    setBulkPct("");
+    refresh();
+  }
+
   return (
     <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Inventario</h1>
-          <p className="text-sm text-[#64748B] mt-1">Stock, cobertura y capital inmovilizado</p>
+          {!loading && (
+            <div className="flex items-center gap-4 mt-1.5">
+              <span className="flex items-center gap-1.5 text-sm text-[#64748B]">
+                <Package className="w-3.5 h-3.5" />
+                Total de referencias <span className="text-[#F1F5F9] font-semibold ml-1">{items.length}</span>
+              </span>
+              <span className="text-[#334155]">|</span>
+              <span className="text-sm text-[#64748B]">
+                Costo total de inventario <span className="text-[#F1F5F9] font-semibold ml-1">{formatARS(totalValor)}</span>
+              </span>
+            </div>
+          )}
         </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 text-sm bg-[#10B981] text-[#080E1A] font-semibold px-4 py-2 rounded-lg hover:bg-[#0D9268] transition-colors"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Agregar producto
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 text-sm border border-white/[0.08] text-[#94A3B8] font-medium px-3 py-2 rounded-lg hover:border-white/[0.16] hover:text-[#F1F5F9] transition-all"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Importar Excel
+          </button>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 text-sm bg-[#10B981] text-[#080E1A] font-semibold px-4 py-2 rounded-lg hover:bg-[#0D9268] transition-colors"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Agregar producto
+          </button>
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -338,24 +527,65 @@ export default function InventarioPage() {
 
       {/* Tabla */}
       <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl">
-        <div className="flex items-center gap-1 px-5 py-4 border-b border-white/[0.06]">
-          {([
-            { key: "todos",   label: `Todos (${items.length})` },
-            { key: "alerta",  label: `En alerta (${enAlerta.length})` },
-            { key: "critico", label: `Crítico (${criticos.length})` },
-          ] as const).map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === t.key ? "bg-[#10B981]/10 text-[#10B981]" : "text-[#475569] hover:text-[#94A3B8]"}`}>
-              {t.label}
-            </button>
-          ))}
+        {/* Tabs + bulk link */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-1">
+            {([
+              { key: "todos",   label: `Todos (${items.length})` },
+              { key: "alerta",  label: `En alerta (${enAlerta.length})` },
+              { key: "critico", label: `Crítico (${criticos.length})` },
+            ] as const).map((t) => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${tab === t.key ? "bg-[#10B981]/10 text-[#10B981]" : "text-[#475569] hover:text-[#94A3B8]"}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setShowBulk(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#F97316] hover:text-[#FB923C] transition-colors">
+            <TrendingUp className="w-3.5 h-3.5" />
+            Actualización masiva de precios
+          </button>
+        </div>
+
+        {/* Búsqueda + chips de categoría */}
+        <div className="px-5 py-3 border-b border-white/[0.06] space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#475569] pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nombre o SKU..."
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg pl-9 pr-8 py-2 text-sm text-[#F1F5F9] placeholder-[#475569] focus:outline-none focus:border-[#10B981]/40 transition-colors"
+            />
+            {search && (
+              <button onClick={() => setSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#94A3B8] transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          {uniqueCats.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+              {(["todas", ...uniqueCats] as string[]).map((cat) => (
+                <button key={cat} onClick={() => setCatFilter(cat)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+                    catFilter === cat
+                      ? "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30"
+                      : "bg-white/[0.04] text-[#475569] border-white/[0.06] hover:text-[#94A3B8] hover:border-white/[0.12]"
+                  }`}>
+                  {cat === "todas" ? "Todas" : cat}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/[0.04]">
-                {["Producto", "Categoría", "Stock actual", "Mínimo", "Cobertura", "Costo unit.", "Valor en stock", "Estado"].map((col) => (
+                {["Producto", "Categoría", "Stock actual", "Mínimo", "Cobertura", "Costo unit.", "Valor en stock", "Estado", ""].map((col) => (
                   <th key={col} className="text-left text-xs font-medium text-[#475569] px-5 py-3">{col}</th>
                 ))}
               </tr>
@@ -406,6 +636,28 @@ export default function InventarioPage() {
                           {cfg.label}
                         </span>
                       </td>
+                      <td className="px-5 py-3.5">
+                        <button
+                          onClick={() => {
+                            const prod = products.find((p) => p.id === item.id);
+                            setEditProduct({
+                              id:                 item.id,
+                              nombre:             item.nombre,
+                              sku:                item.sku ?? "",
+                              precio:             prod?.list_price ?? 0,
+                              precioCash:         prod?.price_cash ?? null,
+                              precioInstallments: prod?.price_installments ?? null,
+                              costo:              item.costoUnitario,
+                              categoria:          item.categoria,
+                              categoriaId:        prod?.category?.id,
+                            });
+                          }}
+                          className="text-[#475569] hover:text-[#94A3B8] transition-colors p-1 rounded hover:bg-white/[0.04]"
+                          title="Editar producto"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
@@ -422,9 +674,111 @@ export default function InventarioPage() {
         </div>
       </div>
 
+      {/* Modal actualización masiva de precios */}
+      {showBulk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0C1424] border border-white/[0.10] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-base font-bold text-[#F1F5F9]">Actualización masiva de precios</h2>
+                <p className="text-xs text-[#475569] mt-0.5">Aplicá un ajuste porcentual a un grupo de productos</p>
+              </div>
+              <button onClick={() => { setShowBulk(false); setBulkPct(""); }}
+                className="text-[#475569] hover:text-[#94A3B8] transition-colors p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <Field label="Campo a actualizar">
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { key: "list_price",         label: "Precio lista" },
+                    { key: "price_cash",          label: "Precio efectivo" },
+                    { key: "price_installments",  label: "Precio cuotas" },
+                    { key: "standard_cost",       label: "Costo unitario" },
+                  ] as const).map((f) => (
+                    <button key={f.key} onClick={() => setBulkField(f.key)}
+                      className={`py-2 rounded-lg text-sm font-medium transition-all border ${
+                        bulkField === f.key
+                          ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30"
+                          : "bg-white/[0.03] text-[#475569] border-white/[0.06] hover:border-white/[0.12] hover:text-[#94A3B8]"
+                      }`}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              <Field label="Categoría">
+                <select
+                  value={catFilter}
+                  onChange={(e) => setCatFilter(e.target.value)}
+                  className={selectCls}>
+                  <option value="todas">Todas las categorías</option>
+                  {uniqueCats.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Field>
+
+              <Field label="Porcentaje de ajuste">
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={bulkPct}
+                    onChange={(e) => setBulkPct(e.target.value)}
+                    placeholder="Ej: 15 para +15%, -10 para reducir 10%"
+                    className={inputCls + " pr-8"}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] text-sm font-mono">%</span>
+                </div>
+              </Field>
+
+              {bulkPct && !isNaN(Number(bulkPct)) && Number(bulkPct) !== 0 && (
+                <div className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm border ${
+                  Number(bulkPct) > 0
+                    ? "bg-[#10B981]/[0.08] border-[#10B981]/20 text-[#10B981]"
+                    : "bg-[#EF4444]/[0.08] border-[#EF4444]/20 text-[#EF4444]"
+                }`}>
+                  <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    Se ajustará el <strong>{ { list_price: "precio lista", price_cash: "precio efectivo", price_installments: "precio cuotas", standard_cost: "costo unitario" }[bulkField] }</strong> de{" "}
+                    <strong>{bulkCount}</strong> producto{bulkCount !== 1 ? "s" : ""} en{" "}
+                    {Number(bulkPct) > 0 ? "+" : ""}{bulkPct}%
+                  </span>
+                </div>
+              )}
+
+              <button
+                onClick={handleBulkUpdate}
+                disabled={bulkSaving || !bulkPct || isNaN(Number(bulkPct)) || Number(bulkPct) === 0 || bulkCount === 0}
+                className="w-full py-2.5 rounded-xl font-semibold text-sm bg-[#F97316] text-white hover:bg-[#EA6C0A] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {bulkSaving ? "Actualizando..." : `Confirmar (${bulkCount} productos)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal agregar producto */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Agregar producto">
         <FormProducto userId={user?.id ?? ""} onSaved={refresh} onClose={() => setModalOpen(false)} />
+      </Modal>
+
+      {showImport && (
+        <ProductImport userId={user?.id ?? ""} onDone={refresh} onClose={() => setShowImport(false)} />
+      )}
+
+      {/* Modal editar producto */}
+      <Modal open={!!editProduct} onClose={() => setEditProduct(null)} title="Editar producto">
+        {editProduct && (
+          <FormEditarProducto
+            userId={user?.id ?? ""}
+            product={editProduct}
+            onSaved={refresh}
+            onClose={() => setEditProduct(null)}
+          />
+        )}
       </Modal>
     </div>
   );

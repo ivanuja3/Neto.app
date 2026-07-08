@@ -22,6 +22,7 @@ export interface Database {
           fiscal_year_start: number;
           tax_regime: string | null;
           industry: string | null;
+          monthly_goal: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -69,6 +70,8 @@ export interface Database {
           category_id: string | null;
           type: "physical" | "service" | "digital";
           list_price: number;
+          price_cash: number | null;
+          price_installments: number | null;
           standard_cost: number;
           active: boolean;
           image_url: string | null;
@@ -76,7 +79,7 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["products"]["Row"], "id" | "created_at" | "updated_at">;
+        Insert: Omit<Database["public"]["Tables"]["products"]["Row"], "id" | "created_at" | "updated_at" | "price_cash" | "price_installments"> & { price_cash?: number | null; price_installments?: number | null };
         Update: Partial<Database["public"]["Tables"]["products"]["Insert"]>;
       };
 
@@ -130,11 +133,12 @@ export interface Database {
           margin: number;           // generated
           margin_percent: number;   // generated
           payment_state: "not_paid" | "paid" | "partial" | "refunded";
+          payment_method: string | null;
           notes: string | null;
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["orders"]["Row"], "id" | "margin" | "margin_percent" | "created_at" | "updated_at">;
+        Insert: Omit<Database["public"]["Tables"]["orders"]["Row"], "id" | "margin" | "margin_percent" | "created_at" | "updated_at" | "payment_method"> & { payment_method?: string | null };
         Update: Partial<Database["public"]["Tables"]["orders"]["Insert"]>;
       };
 

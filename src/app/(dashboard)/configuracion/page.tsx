@@ -1,18 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Check, Store, Globe, FileText, Bell, CreditCard } from "lucide-react";
+import { AsesoramientoProfesional } from "@/components/asesoramiento-profesional";
 import { useAuth } from "@/components/auth-provider";
 import { signOut } from "@/lib/auth";
 import { getCompany, updateCompany } from "@/lib/db/companies";
+import { getIntegrations, deleteIntegration, type Integration } from "@/lib/db/integrations";
+import { useCompany } from "@/components/company-provider";
+import { INDUSTRIAS } from "@/lib/constants";
 
-const TABS = [
+const TABS_NEGOCIO = [
   { id: "negocio", label: "Mi negocio", icon: Store },
   { id: "canales", label: "Canales de venta", icon: Globe },
   { id: "impuestos", label: "Datos fiscales", icon: FileText },
+] as const;
+
+const TABS_CUENTA = [
   { id: "notificaciones", label: "Alertas", icon: Bell },
   { id: "plan", label: "Plan y facturación", icon: CreditCard },
 ] as const;
+
+const TABS = [...TABS_NEGOCIO, ...TABS_CUENTA] as const;
 
 type Tab = (typeof TABS)[number]["id"];
 
@@ -71,7 +81,16 @@ function Toggle({ label, description, defaultChecked = false }: { label: string;
   );
 }
 
-function ChannelCard({ nombre, conectado, plataforma }: { nombre: string; conectado: boolean; plataforma: string }) {
+function ChannelCard({
+  nombre, conectado, plataforma, onConnect, onDisconnect, comingSoon,
+}: {
+  nombre: string;
+  conectado: boolean;
+  plataforma: string;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  comingSoon?: boolean;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 bg-[#080E1A] rounded-xl p-4 border border-white/[0.06]">
       <div className="flex items-center gap-3">
@@ -84,31 +103,29 @@ function ChannelCard({ nombre, conectado, plataforma }: { nombre: string; conect
         </div>
       </div>
       <div className="flex items-center gap-3">
-        {conectado ? (
+        {comingSoon ? (
+          <span className="text-xs text-[#475569] italic">Próximamente</span>
+        ) : conectado ? (
           <span className="text-xs font-semibold bg-[#10B981]/10 text-[#10B981] px-2 py-0.5 rounded">Conectado</span>
         ) : (
           <span className="text-xs text-[#475569]">Sin conectar</span>
         )}
-        <button className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-          conectado
-            ? "border-white/[0.06] text-[#94A3B8] hover:border-[#EF4444]/30 hover:text-[#EF4444]"
-            : "border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/5"
-        }`}>
-          {conectado ? "Desconectar" : "Conectar"}
-        </button>
+        {!comingSoon && (
+          <button
+            onClick={conectado ? onDisconnect : onConnect}
+            className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+              conectado
+                ? "border-white/[0.06] text-[#94A3B8] hover:border-[#EF4444]/30 hover:text-[#EF4444]"
+                : "border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/5"
+            }`}
+          >
+            {conectado ? "Desconectar" : "Conectar"}
+          </button>
+        )}
       </div>
     </div>
   );
 }
-
-const INDUSTRIAS = [
-  { label: "Ecommerce", value: "ecommerce" },
-  { label: "Indumentaria", value: "indumentaria" },
-  { label: "Electrónica", value: "electronica" },
-  { label: "Alimentos", value: "alimentos" },
-  { label: "Hogar", value: "hogar" },
-  { label: "Otro", value: "otro" },
-];
 
 const REGIMENES = [
   { label: "Responsable Inscripto", value: "responsable_inscripto" },
@@ -121,12 +138,17 @@ const MONEDAS = [
   { label: "USD (Dólar)", value: "USD" },
 ];
 
-export default function ConfiguracionPage() {
+function ConfiguracionPageInner() {
   const { user } = useAuth();
+  const { refresh: refreshCompany } = useCompany();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("negocio");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingCompany, setLoadingCompany] = useState(true);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [tnToast, setTnToast] = useState<"success" | "error" | null>(null);
 
   const [name, setName] = useState("");
   const [cuit, setCuit] = useState("");
@@ -136,6 +158,16 @@ export default function ConfiguracionPage() {
   const [industry, setIndustry] = useState("ecommerce");
   const [taxRegime, setTaxRegime] = useState("responsable_inscripto");
   const [currency, setCurrency] = useState("ARS");
+
+  const loadIntegrations = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await getIntegrations(user.id);
+      setIntegrations(data);
+    } catch (err) {
+      console.error("loadIntegrations error:", err);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -151,8 +183,42 @@ export default function ConfiguracionPage() {
         setCurrency(c.currency ?? "ARS");
       }
       setLoadingCompany(false);
+    }).catch(() => {
+      setLoadingCompany(false);
     });
-  }, [user]);
+    loadIntegrations();
+  }, [user, loadIntegrations]);
+
+  // Manejar redirect de OAuth
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const error = searchParams.get("error");
+    if (connected === "tiendanube") {
+      setTab("canales");
+      setTnToast("success");
+      loadIntegrations();
+      router.replace("/configuracion");
+      setTimeout(() => setTnToast(null), 4000);
+    } else if (error?.startsWith("tn_")) {
+      setTab("canales");
+      setTnToast("error");
+      router.replace("/configuracion");
+      setTimeout(() => setTnToast(null), 4000);
+    }
+  }, [searchParams, loadIntegrations, router]);
+
+  const tnConnected = integrations.some((i) => i.channel === "tiendanube");
+
+  async function handleDisconnectTN() {
+    if (!user) return;
+    const { error } = await deleteIntegration(user.id, "tiendanube");
+    if (error) {
+      setTnToast("error");
+      setTimeout(() => setTnToast(null), 4000);
+      return;
+    }
+    await loadIntegrations();
+  }
 
   async function handleSave() {
     if (tab === "negocio" && user) {
@@ -169,7 +235,12 @@ export default function ConfiguracionPage() {
           currency,
         });
         setSaved(true);
+        refreshCompany();
         setTimeout(() => setSaved(false), 2500);
+      } catch (err) {
+        console.error("handleSave error:", err);
+        setTnToast("error");
+        setTimeout(() => setTnToast(null), 4000);
       } finally {
         setSaving(false);
       }
@@ -198,7 +269,23 @@ export default function ConfiguracionPage() {
         {/* Sidebar tabs */}
         <div className="w-44 shrink-0">
           <nav className="space-y-0.5">
-            {TABS.map(({ id, label, icon: Icon }) => (
+            <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wider px-3 pb-1.5">Mi negocio</p>
+            {TABS_NEGOCIO.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${
+                  tab === id
+                    ? "bg-[#10B981]/10 text-[#10B981]"
+                    : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-white/[0.04]"
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {label}
+              </button>
+            ))}
+            <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wider px-3 pb-1.5 pt-4">Mi cuenta</p>
+            {TABS_CUENTA.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
@@ -230,7 +317,7 @@ export default function ConfiguracionPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <InputField label="Email de contacto" type="email" placeholder="contacto@minegocio.com" value={email} onChange={setEmail} />
-                    <InputField label="Teléfono" placeholder="+54 9 351 1234567" value={phone} onChange={setPhone} />
+                    <InputField label="WhatsApp" placeholder="11 2345 6789" value={phone} onChange={setPhone} hint="Sin el 0 ni el 15. Ej: 11 2345 6789" />
                   </div>
                   <InputField label="Dirección" placeholder="Calle 123, Córdoba" value={address} onChange={setAddress} />
                   <div className="grid grid-cols-2 gap-4">
@@ -246,11 +333,30 @@ export default function ConfiguracionPage() {
           {tab === "canales" && (
             <>
               <h2 className="text-sm font-semibold text-[#F1F5F9] border-b border-white/[0.06] pb-4">Canales de venta conectados</h2>
+
+              {tnToast === "success" && (
+                <div className="flex items-center gap-2 bg-[#10B981]/10 border border-[#10B981]/20 text-[#10B981] text-sm px-4 py-2.5 rounded-lg">
+                  <Check className="w-4 h-4 shrink-0" />
+                  Tienda Nube conectada exitosamente
+                </div>
+              )}
+              {tnToast === "error" && (
+                <div className="bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444] text-sm px-4 py-2.5 rounded-lg">
+                  No se pudo conectar Tienda Nube. Intentá de nuevo.
+                </div>
+              )}
+
               <div className="space-y-3">
-                <ChannelCard nombre="Mi tienda online" conectado plataforma="Tienda Nube" />
-                <ChannelCard nombre="Perfil MercadoLibre" conectado plataforma="MercadoLibre" />
-                <ChannelCard nombre="Local físico" conectado={false} plataforma="Punto de venta" />
-                <ChannelCard nombre="Shopify store" conectado={false} plataforma="Shopify" />
+                <ChannelCard
+                  nombre="Mi tienda online"
+                  plataforma="Tienda Nube"
+                  conectado={tnConnected}
+                  onConnect={() => { if (user?.id) window.location.href = `/api/auth/tiendanube/connect?uid=${user.id}`; }}
+                  onDisconnect={handleDisconnectTN}
+                />
+                <ChannelCard nombre="Perfil MercadoLibre" conectado={false} plataforma="MercadoLibre" comingSoon />
+                <ChannelCard nombre="Meta Ads" conectado={false} plataforma="Meta" comingSoon />
+                <ChannelCard nombre="Shopify store" conectado={false} plataforma="Shopify" comingSoon />
               </div>
               <div className="mt-4 p-4 bg-[#080E1A] rounded-xl border border-dashed border-white/[0.1] text-center">
                 <p className="text-sm text-[#94A3B8]">¿Vendés en otro canal?</p>
@@ -273,7 +379,13 @@ export default function ConfiguracionPage() {
               <div>
                 <label className="block text-xs font-medium text-[#94A3B8] mb-2">Jurisdicciones IIBB (Convenio Multilateral)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {["Córdoba", "Buenos Aires", "Santa Fe", "Mendoza", "Neuquén", "Tucumán"].map((j) => (
+                  {[
+                    "Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut",
+                    "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy",
+                    "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquén",
+                    "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz",
+                    "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucumán",
+                  ].map((j) => (
                     <label key={j} className="flex items-center gap-2 text-xs text-[#94A3B8] cursor-pointer">
                       <input type="checkbox" defaultChecked={["Córdoba", "Buenos Aires", "Santa Fe"].includes(j)}
                         className="accent-[#10B981]" />
@@ -372,6 +484,17 @@ export default function ConfiguracionPage() {
           )}
         </div>
       </div>
+      <div className="px-6 pb-6 mt-4">
+        <AsesoramientoProfesional />
+      </div>
     </div>
+  );
+}
+
+export default function ConfiguracionPage() {
+  return (
+    <Suspense>
+      <ConfiguracionPageInner />
+    </Suspense>
   );
 }
