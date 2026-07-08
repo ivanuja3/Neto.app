@@ -99,9 +99,11 @@ export default function ImpuestosPage() {
   const [loading,      setLoading]      = useState(true);
   const [ingresosMes,  setIngresosMes]  = useState(0);
   const [pagosLineas,  setPagosLineas]  = useState<AnalyticLine[]>([]);
-  const [orders,       setOrders]       = useState<Order[]>([]);
-  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
-  const [invoiceForm,  setInvoiceForm]  = useState({
+  const [orders,         setOrders]         = useState<Order[]>([]);
+  const [invoiceOrder,   setInvoiceOrder]   = useState<Order | null>(null);
+  const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
+  const [bulkInvoice,    setBulkInvoice]    = useState(false);
+  const [invoiceForm,    setInvoiceForm]    = useState({
     tipo:           "B" as TipoComp,
     puntoVenta:     "0001",
     clienteNombre:  "",
@@ -109,6 +111,20 @@ export default function ImpuestosPage() {
     condIva:        "Consumidor Final",
   });
   const setInv = (k: string, v: string) => setInvoiceForm((f) => ({ ...f, [k]: v }));
+
+  const allSelected   = orders.length > 0 && selectedIds.size === orders.length;
+  const someSelected  = selectedIds.size > 0 && !allSelected;
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  function toggleAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(orders.map((o) => o.id)));
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -337,30 +353,117 @@ export default function ImpuestosPage() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-5 px-5 py-2 bg-white/[0.02]">
-                  {["Fecha", "Canal", "Total", "Estado pago", ""].map((h) => (
-                    <p key={h} className="text-[11px] font-medium text-[#475569]">{h}</p>
-                  ))}
-                </div>
-                {orders.map((o) => (
-                  <div key={o.id} className="grid grid-cols-5 items-center px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
-                    <p className="text-[13px] text-[#F1F5F9]">{o.date}</p>
-                    <p className="text-[13px] text-[#94A3B8] capitalize">{o.channel}</p>
-                    <p className="text-[13px] font-mono font-semibold text-[#F1F5F9]">{formatARS(Number(o.amount_total))}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded w-fit ${
-                      o.payment_state === "paid" ? "bg-[#10B981]/15 text-[#10B981]" : "bg-[#F59E0B]/15 text-[#F59E0B]"
-                    }`}>
-                      {o.payment_state === "paid" ? "Cobrado" : "Pendiente"}
-                    </span>
+                {/* Header tabla con checkbox "seleccionar todas" + botón facturar todas */}
+                <div className="flex items-center justify-between px-5 py-2.5 bg-white/[0.02]">
+                  <div className="flex items-center gap-3">
                     <button
-                      onClick={() => { setInvoiceOrder(o); setInvoiceForm(f => ({ ...f, clienteNombre: "", clienteCuit: "" })); }}
-                      className="flex items-center gap-1.5 text-xs font-semibold text-[#3B82F6] hover:text-[#60A5FA] transition-colors justify-end"
+                      onClick={toggleAll}
+                      className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${
+                        allSelected
+                          ? "bg-[#3B82F6] border-[#3B82F6]"
+                          : someSelected
+                          ? "bg-[#3B82F6]/30 border-[#3B82F6]/60"
+                          : "border-white/[0.20] bg-transparent hover:border-[#3B82F6]/50"
+                      }`}
+                      title={allSelected ? "Deseleccionar todas" : "Seleccionar todas"}
                     >
-                      <FileText className="w-3.5 h-3.5" />
-                      Facturar
+                      {(allSelected || someSelected) && (
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10">
+                          {allSelected
+                            ? <path d="M1.5 5l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            : <path d="M2 5h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          }
+                        </svg>
+                      )}
                     </button>
+                    <div className="grid grid-cols-4 gap-0" style={{ width: "calc(100% - 28px)" }}>
+                      {["Fecha", "Canal", "Total", "Estado pago"].map((h) => (
+                        <p key={h} className="text-[11px] font-medium text-[#475569]">{h}</p>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                  <button
+                    onClick={() => setBulkInvoice(true)}
+                    className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-[#F1F5F9] bg-[#3B82F6] hover:bg-[#2563EB] px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Facturar todas las ventas
+                  </button>
+                </div>
+
+                {/* Filas con checkbox individual */}
+                {orders.map((o) => {
+                  const checked = selectedIds.has(o.id);
+                  return (
+                    <div
+                      key={o.id}
+                      onClick={() => toggleOne(o.id)}
+                      className={`flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-colors ${
+                        checked ? "bg-[#3B82F6]/[0.06]" : "hover:bg-white/[0.02]"
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                        checked ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.20]"
+                      }`}>
+                        {checked && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10">
+                            <path d="M1.5 5l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+
+                      {/* Datos */}
+                      <div className="flex-1 grid grid-cols-4 items-center gap-0">
+                        <p className="text-[13px] text-[#F1F5F9]">{o.date}</p>
+                        <p className="text-[13px] text-[#94A3B8] capitalize">{o.channel}</p>
+                        <p className="text-[13px] font-mono font-semibold text-[#F1F5F9]">{formatARS(Number(o.amount_total))}</p>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded w-fit ${
+                          o.payment_state === "paid" ? "bg-[#10B981]/15 text-[#10B981]" : "bg-[#F59E0B]/15 text-[#F59E0B]"
+                        }`}>
+                          {o.payment_state === "paid" ? "Cobrado" : "Pendiente"}
+                        </span>
+                      </div>
+
+                      {/* Botón individual */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInvoiceOrder(o);
+                          setInvoiceForm(f => ({ ...f, clienteNombre: "", clienteCuit: "" }));
+                        }}
+                        className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-[#3B82F6] hover:text-[#60A5FA] transition-colors"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Facturar
+                      </button>
+                    </div>
+                  );
+                })}
+
+                {/* Barra flotante de selección */}
+                {selectedIds.size > 0 && (
+                  <div className="sticky bottom-0 flex items-center justify-between px-5 py-3 bg-[#0D1829] border-t border-[#3B82F6]/30">
+                    <p className="text-sm text-[#94A3B8]">
+                      <span className="font-bold text-[#F1F5F9]">{selectedIds.size}</span> {selectedIds.size === 1 ? "venta seleccionada" : "ventas seleccionadas"}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedIds(new Set())}
+                        className="text-xs text-[#475569] hover:text-[#94A3B8] transition-colors px-3 py-1.5"
+                      >
+                        Limpiar
+                      </button>
+                      <button
+                        onClick={() => setBulkInvoice(true)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-[#F1F5F9] bg-[#3B82F6] hover:bg-[#2563EB] px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Facturar seleccionadas
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -538,6 +641,107 @@ export default function ImpuestosPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal facturación masiva */}
+      {bulkInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#0C1424] border border-white/[0.10] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
+              <div>
+                <h2 className="text-base font-bold text-[#F1F5F9]">Facturación masiva</h2>
+                <p className="text-xs text-[#475569] mt-0.5">
+                  {selectedIds.size > 0
+                    ? `${selectedIds.size} ${selectedIds.size === 1 ? "venta seleccionada" : "ventas seleccionadas"}`
+                    : `${orders.length} ${orders.length === 1 ? "venta" : "ventas"} · Total del período`}
+                </p>
+              </div>
+              <button onClick={() => setBulkInvoice(false)} className="text-[#475569] hover:text-[#94A3B8] transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Configuración común */}
+            <div className="px-6 py-4 border-b border-white/[0.06] shrink-0">
+              <p className="text-xs font-semibold text-[#475569] uppercase tracking-widest mb-3">Configuración del comprobante</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] text-[#475569] mb-1 block">Tipo</label>
+                  <div className="flex gap-1">
+                    {TIPO_COMPROBANTE.map((t) => (
+                      <button key={t} onClick={() => setInv("tipo", t)}
+                        className={`flex-1 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+                          invoiceForm.tipo === t
+                            ? "bg-[#3B82F6] text-white"
+                            : "bg-white/[0.04] text-[#94A3B8] hover:bg-white/[0.08]"
+                        }`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[11px] text-[#475569] mb-1 block">Punto de venta</label>
+                  <input value={invoiceForm.puntoVenta} onChange={(e) => setInv("puntoVenta", e.target.value)}
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1.5 text-sm text-[#F1F5F9] font-mono focus:outline-none focus:border-[#3B82F6]/40" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-[#475569] mb-1 block">Condición IVA receptor</label>
+                  <select value={invoiceForm.condIva} onChange={(e) => setInv("condIva", e.target.value)}
+                    className="w-full bg-[#080E1A] border border-white/[0.08] rounded-lg px-3 py-1.5 text-sm text-[#F1F5F9] focus:outline-none focus:border-[#3B82F6]/40">
+                    {COND_IVA.map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Lista de ventas a facturar */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-4 px-6 py-2 bg-white/[0.02] text-[11px] font-medium text-[#475569]">
+                {["Fecha", "Canal", "Total", "Pago"].map((h) => <p key={h}>{h}</p>)}
+              </div>
+              {(selectedIds.size > 0 ? orders.filter((o) => selectedIds.has(o.id)) : orders).map((o) => (
+                <div key={o.id} className="grid grid-cols-4 items-center px-6 py-3 border-t border-white/[0.04]">
+                  <p className="text-[13px] text-[#F1F5F9]">{o.date}</p>
+                  <p className="text-[13px] text-[#94A3B8] capitalize">{o.channel}</p>
+                  <p className="text-[13px] font-mono font-semibold text-[#F1F5F9]">{formatARS(Number(o.amount_total))}</p>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded w-fit ${
+                    o.payment_state === "paid" ? "bg-[#10B981]/15 text-[#10B981]" : "bg-[#F59E0B]/15 text-[#F59E0B]"
+                  }`}>
+                    {o.payment_state === "paid" ? "Cobrado" : "Pendiente"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer con total y botón */}
+            <div className="px-6 py-4 border-t border-white/[0.06] shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-xs text-[#475569]">Total a facturar</p>
+                  <p className="text-xl font-bold font-mono text-[#10B981] mt-0.5">
+                    {formatARS(
+                      (selectedIds.size > 0 ? orders.filter((o) => selectedIds.has(o.id)) : orders)
+                        .reduce((s, o) => s + Number(o.amount_total), 0)
+                    )}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-[#475569]">Comprobantes a emitir</p>
+                  <p className="text-xl font-bold text-[#F1F5F9] mt-0.5">
+                    {selectedIds.size > 0 ? selectedIds.size : orders.length}
+                  </p>
+                </div>
+              </div>
+              <button disabled className="w-full py-3 rounded-xl text-sm font-semibold bg-[#3B82F6]/20 text-[#3B82F6]/50 border border-[#3B82F6]/20 cursor-not-allowed flex items-center justify-center gap-2">
+                <Zap className="w-4 h-4" />
+                Emitir {selectedIds.size > 0 ? selectedIds.size : orders.length} {(selectedIds.size > 0 ? selectedIds.size : orders.length) === 1 ? "comprobante" : "comprobantes"} vía ARCA
+              </button>
+              <p className="text-[11px] text-[#475569] text-center mt-2">Conectá ARCA en Configuración para habilitar la emisión</p>
             </div>
           </div>
         </div>
