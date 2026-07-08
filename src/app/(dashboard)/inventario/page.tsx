@@ -314,7 +314,7 @@ export default function InventarioPage() {
     const inv     = p.stock?.[0];
     const stock   = Number(inv?.qty_on_hand ?? 0);
     const cost    = Number(inv?.avg_cost ?? p.standard_cost ?? 0);
-    const minimo  = Math.max(10, Math.round(stock * 0.15)); // 15% como stock mínimo
+    const minimo  = stock > 0 ? Math.round(stock * 0.15) : 0;
     const vendido = qtyVendida[p.id] ?? 0;
     const cobertura = vendido > 0 ? Math.round((stock / vendido) * 30) : 999;
     return {
