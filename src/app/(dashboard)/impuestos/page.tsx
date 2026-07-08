@@ -202,7 +202,7 @@ export default function ImpuestosPage() {
           </div>
         </div>
 
-        {tab === "obligaciones" ? (
+        {tab === "obligaciones" && (
           loading ? (
             <div className="divide-y divide-white/[0.04]">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -250,7 +250,8 @@ export default function ImpuestosPage() {
               })}
             </div>
           )
-        ) : (
+        )}
+        {tab === "cm" && (
           <div className="p-5 space-y-4">
             <div className="flex items-start gap-3 bg-[#3B82F6]/10 border border-[#3B82F6]/20 rounded-xl px-4 py-3">
               <Info className="w-4 h-4 text-[#3B82F6] shrink-0 mt-0.5" />
