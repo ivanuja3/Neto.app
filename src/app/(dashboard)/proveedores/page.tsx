@@ -189,13 +189,18 @@ export default function ProveedoresPage() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [supRes, purRes] = await Promise.all([
-        getSuppliers(user!.id),
-        getPurchases(user!.id),
-      ]);
-      setSuppliers(supRes.data ?? []);
-      setPurchases(purRes.data ?? []);
-      setLoading(false);
+      try {
+        const [supRes, purRes] = await Promise.all([
+          getSuppliers(user!.id),
+          getPurchases(user!.id),
+        ]);
+        setSuppliers(supRes.data ?? []);
+        setPurchases(purRes.data ?? []);
+      } catch (err) {
+        console.error("ProveedoresPage load error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [user, refreshKey]);
@@ -257,7 +262,20 @@ export default function ProveedoresPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Proveedores</h1>
-          <p className="text-sm text-[#64748B] mt-1">Contactos, condiciones de pago y órdenes de compra</p>
+          {!loading && (
+            <div className="flex items-center gap-4 mt-1.5">
+              <span className="text-sm text-[#64748B]">
+                Total proveedores <span className="text-[#F1F5F9] font-semibold ml-1">{proveedores.length}</span>
+              </span>
+              <span className="text-[#334155]">|</span>
+              <span className="text-sm text-[#64748B]">
+                Total por pagar{" "}
+                <span className={`font-semibold ml-1 ${deudaTotal > 0 ? "text-[#EF4444]" : "text-[#10B981]"}`}>
+                  {formatARS(deudaTotal)}
+                </span>
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button

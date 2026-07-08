@@ -39,6 +39,26 @@ export async function getSuppliers(userId: string) {
     .order("name");
 }
 
+export async function getCustomers(userId: string) {
+  return db
+    .from("partners")
+    .select("*")
+    .eq("user_id", userId)
+    .in("type", ["customer", "both"])
+    .order("name");
+}
+
+export async function createCustomer(customer: {
+  user_id: string;
+  name: string;
+  type: "customer";
+  email?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+}) {
+  return db.from("partners").insert(customer).select().single();
+}
+
 export async function getPurchases(userId: string, options?: {
   state?: string;
   months?: number;
@@ -77,7 +97,8 @@ export async function createPurchase(
       purchase_id: typed.id,
       user_id: purchase.user_id,
     }));
-    await db.from("purchase_items").insert(itemsWithId);
+    const { error: itemsErr } = await db.from("purchase_items").insert(itemsWithId);
+    if (itemsErr) console.error("createPurchase: purchase_items insert failed", itemsErr);
   }
 
   return { data: typed, error: null };

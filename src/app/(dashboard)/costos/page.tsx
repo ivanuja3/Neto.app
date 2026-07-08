@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getExpenses, getKpisCurrentMonth, createExpense, deleteExpense } from "@/lib/db/analytics";
+import { getCompany } from "@/lib/db/companies";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
-import { PlusCircle, Pencil, Trash2, AlertCircle, Receipt } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, AlertCircle, Receipt, Sparkles } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatARS } from "@/lib/mock-data";
 import {
@@ -48,14 +49,63 @@ function toMonthly(amount: number, frequency: string): number {
 /* ── Form agregar costo ── */
 const CATEGORIAS = ["Infraestructura", "Personal", "Tecnología", "Profesional", "Producto", "Logística", "Comisiones", "Marketing", "General"];
 
-function FormCosto({ userId, onSaved, onClose }: { userId: string; onSaved: () => void; onClose: () => void }) {
+/* ── Plantillas de gastos por rubro ── */
+type Sugerencia = { nombre: string; categoria: string; tipo: "fixed" | "variable"; monto: number; emoji: string };
+
+const PLANTILLAS: Record<string, Sugerencia[]> = {
+  ecommerce: [
+    { emoji: "🏪", nombre: "Comisión Tienda Nube / MercadoLibre", categoria: "Comisiones",      tipo: "variable", monto: 40000  },
+    { emoji: "📦", nombre: "Logística y envíos",                  categoria: "Logística",        tipo: "variable", monto: 35000  },
+    { emoji: "📣", nombre: "Meta Ads / publicidad",               categoria: "Marketing",        tipo: "variable", monto: 60000  },
+    { emoji: "🏢", nombre: "Alquiler depósito",                   categoria: "Infraestructura",  tipo: "fixed",    monto: 90000  },
+    { emoji: "👤", nombre: "Contador / gestor",                   categoria: "Profesional",      tipo: "fixed",    monto: 30000  },
+    { emoji: "💻", nombre: "Herramientas y software",             categoria: "Tecnología",       tipo: "fixed",    monto: 15000  },
+    { emoji: "👥", nombre: "Sueldo empleado",                     categoria: "Personal",         tipo: "fixed",    monto: 200000 },
+    { emoji: "⚡", nombre: "Servicios (luz, internet)",           categoria: "Infraestructura",  tipo: "fixed",    monto: 20000  },
+  ],
+  gastronomia: [
+    { emoji: "🏠", nombre: "Alquiler del local",                  categoria: "Infraestructura",  tipo: "fixed",    monto: 150000 },
+    { emoji: "⚡", nombre: "Gas y electricidad",                  categoria: "Infraestructura",  tipo: "fixed",    monto: 40000  },
+    { emoji: "👥", nombre: "Personal de cocina",                  categoria: "Personal",         tipo: "fixed",    monto: 300000 },
+    { emoji: "🧾", nombre: "Contador",                            categoria: "Profesional",      tipo: "fixed",    monto: 30000  },
+    { emoji: "🚀", nombre: "Plataformas delivery (PedidosYa, etc)", categoria: "Comisiones",    tipo: "variable", monto: 50000  },
+    { emoji: "📣", nombre: "Publicidad en redes",                 categoria: "Marketing",        tipo: "variable", monto: 25000  },
+  ],
+  servicios: [
+    { emoji: "💻", nombre: "Herramientas y software",             categoria: "Tecnología",       tipo: "fixed",    monto: 20000  },
+    { emoji: "📣", nombre: "Meta Ads / publicidad",               categoria: "Marketing",        tipo: "variable", monto: 40000  },
+    { emoji: "🏢", nombre: "Espacio de coworking / alquiler",     categoria: "Infraestructura",  tipo: "fixed",    monto: 60000  },
+    { emoji: "🧾", nombre: "Contador",                            categoria: "Profesional",      tipo: "fixed",    monto: 30000  },
+    { emoji: "⚡", nombre: "Internet y telefonía",                categoria: "Infraestructura",  tipo: "fixed",    monto: 15000  },
+    { emoji: "👥", nombre: "Empleado / colaborador",              categoria: "Personal",         tipo: "fixed",    monto: 180000 },
+  ],
+  retail: [
+    { emoji: "🏠", nombre: "Alquiler del local",                  categoria: "Infraestructura",  tipo: "fixed",    monto: 200000 },
+    { emoji: "👥", nombre: "Personal de local",                   categoria: "Personal",         tipo: "fixed",    monto: 250000 },
+    { emoji: "📦", nombre: "Flete y logística",                   categoria: "Logística",        tipo: "variable", monto: 20000  },
+    { emoji: "📣", nombre: "Publicidad",                          categoria: "Marketing",        tipo: "variable", monto: 30000  },
+    { emoji: "🧾", nombre: "Contador / gestor",                   categoria: "Profesional",      tipo: "fixed",    monto: 30000  },
+    { emoji: "⚡", nombre: "Servicios del local",                 categoria: "Infraestructura",  tipo: "fixed",    monto: 30000  },
+  ],
+};
+
+function getPlantilla(industry: string | null): Sugerencia[] {
+  if (!industry) return PLANTILLAS.ecommerce;
+  const k = industry.toLowerCase();
+  if (k.includes("gastro") || k.includes("comida") || k.includes("restaurant")) return PLANTILLAS.gastronomia;
+  if (k.includes("servic")) return PLANTILLAS.servicios;
+  if (k.includes("retail") || k.includes("ropa") || k.includes("indument")) return PLANTILLAS.retail;
+  return PLANTILLAS.ecommerce;
+}
+
+function FormCosto({ userId, onSaved, onClose, initial }: { userId: string; onSaved: () => void; onClose: () => void; initial?: Partial<{ nombre: string; categoria: string; tipo: string; monto: string }> | null }) {
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState("");
   const [form, setForm]     = useState({
-    nombre:       "",
-    categoria:    "General",
-    tipo:         "fixed" as "fixed" | "variable",
-    monto:        "",
+    nombre:       initial?.nombre    ?? "",
+    categoria:    initial?.categoria ?? "General",
+    tipo:         (initial?.tipo as "fixed" | "variable") ?? "fixed",
+    monto:        initial?.monto     ?? "",
     periodicidad: "monthly" as "monthly" | "quarterly" | "yearly",
   });
 
@@ -135,17 +185,20 @@ export default function CostosPage() {
   const [loading, setLoading]   = useState(true);
   const [costos, setCostos]     = useState<CostoItem[]>([]);
   const [ingresosMes, setIngresosMes] = useState(0);
+  const [industry, setIndustry] = useState<string | null>(null);
   const [tab, setTab]           = useState<"todos" | "fijo" | "variable">("todos");
   const [modalOpen, setModalOpen] = useState(false);
+  const [prefill, setPrefill]   = useState<Partial<{ nombre: string; categoria: string; tipo: string; monto: string }> | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [expRes, kpiRes] = await Promise.all([
+      const [expRes, kpiRes, companyRes] = await Promise.all([
         getExpenses(user!.id),
         getKpisCurrentMonth(user!.id),
+        getCompany(user!.id),
       ]);
 
       const items: CostoItem[] = (expRes.data ?? []).map((e: {
@@ -162,6 +215,7 @@ export default function CostosPage() {
 
       setCostos(items);
       setIngresosMes(Number(kpiRes.data?.[0]?.ingresos ?? 0));
+      setIndustry(companyRes?.industry ?? null);
       setLoading(false);
     }
     load();
@@ -294,6 +348,35 @@ export default function CostosPage() {
         </div>
       </div>
 
+      {/* Plantillas de gastos (solo cuando no hay costos cargados) */}
+      {!loading && costos.length === 0 && (
+        <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-4 h-4 text-[#F59E0B]" />
+            <h2 className="text-sm font-semibold text-[#F1F5F9]">Gastos típicos de tu rubro</h2>
+            <span className="text-[11px] text-[#475569] ml-1">Hacé click para agregar rápido</span>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {getPlantilla(industry).map((s) => (
+              <button
+                key={s.nombre}
+                onClick={() => { setPrefill({ nombre: s.nombre, categoria: s.categoria, tipo: s.tipo, monto: String(s.monto) }); setModalOpen(true); }}
+                className="text-left p-3.5 rounded-xl border border-white/[0.06] bg-[#080E1A] hover:border-white/[0.14] hover:bg-white/[0.02] transition-all group"
+              >
+                <span className="text-xl block mb-2">{s.emoji}</span>
+                <p className="text-[12px] font-medium text-[#F1F5F9] leading-tight">{s.nombre}</p>
+                <p className="text-[11px] text-[#475569] mt-1 font-mono">
+                  ${s.monto.toLocaleString("es-AR")}/mes · {s.tipo === "fixed" ? "Fijo" : "Variable"}
+                </p>
+                <p className="text-[10px] text-[#10B981] mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                  + Agregar →
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tabla de costos */}
       <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl">
         {/* Tabs */}
@@ -367,8 +450,8 @@ export default function CostosPage() {
       </div>
 
       {/* Modal agregar costo */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Agregar costo">
-        <FormCosto userId={user?.id ?? ""} onSaved={refresh} onClose={() => setModalOpen(false)} />
+      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setPrefill(null); }} title="Agregar costo">
+        <FormCosto userId={user?.id ?? ""} onSaved={refresh} onClose={() => { setModalOpen(false); setPrefill(null); }} initial={prefill} />
       </Modal>
     </div>
   );

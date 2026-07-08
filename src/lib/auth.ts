@@ -4,11 +4,31 @@ export async function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email, password });
 }
 
-export async function signUp(email: string, password: string, firstName: string, lastName: string) {
+export async function signUp(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+  businessName: string,
+  industry: string,
+  plan = "pro"
+) {
+  const redirectTo =
+    typeof window !== "undefined" ? `${window.location.origin}/dashboard` : undefined;
+
   return supabase.auth.signUp({
     email,
     password,
-    options: { data: { first_name: firstName, last_name: lastName } },
+    options: {
+      emailRedirectTo: redirectTo,
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        business_name: businessName,
+        industry,
+        plan,
+      },
+    },
   });
 }
 

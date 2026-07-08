@@ -33,25 +33,29 @@ export default function AdsPage() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [sumRes, pnlRes] = await Promise.all([
-        getAdSummary(user!.id),
-        getPnlMonthly(user!.id, 6),
-      ]);
-      setSummary(sumRes);
+      try {
+        const [sumRes, pnlRes] = await Promise.all([
+          getAdSummary(user!.id),
+          getPnlMonthly(user!.id, 6),
+        ]);
+        setSummary(sumRes);
 
-      // Build monthly chart from P&L data (marketing spend + ingresos per month)
-      const rows = (pnlRes.data ?? []) as PnlRow[];
-      const metrics: AdMetric[] = rows.map((r) => {
-        const gasto    = Number(r.marketing);
-        const ingresos = Number(r.ingresos);
-        const roasReal = gasto > 0 ? +(ingresos / gasto).toFixed(2) : 0;
-        const cpa      = ingresos > 0 && gasto > 0
-          ? +(gasto / Math.max(ingresos / 15000, 1)).toFixed(0)  // aprox. pedidos = ingresos / ticket_promedio
-          : 0;
-        return { mes: mesLabel(r.mes), gasto, ingresos, roasReal, cpa };
-      });
-      setAdMetrics(metrics);
-      setLoading(false);
+        const rows = (pnlRes.data ?? []) as PnlRow[];
+        const metrics: AdMetric[] = rows.map((r) => {
+          const gasto    = Number(r.marketing);
+          const ingresos = Number(r.ingresos);
+          const roasReal = gasto > 0 ? +(ingresos / gasto).toFixed(2) : 0;
+          const cpa      = ingresos > 0 && gasto > 0
+            ? +(gasto / Math.max(ingresos / 15000, 1)).toFixed(0)
+            : 0;
+          return { mes: mesLabel(r.mes), gasto, ingresos, roasReal, cpa };
+        });
+        setAdMetrics(metrics);
+      } catch (err) {
+        console.error("AdsPage load error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [user]);
@@ -95,20 +99,16 @@ export default function AdsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((m) => (
           <div key={m.label}
-            className="relative bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 overflow-hidden hover:border-white/[0.12] hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-all duration-200 cursor-default">
-            <div className="absolute top-0 left-0 right-0 h-px"
-              style={{ background: `linear-gradient(90deg, transparent, ${m.accent}80, transparent)` }} />
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 blur-xl opacity-[0.10] pointer-events-none"
-              style={{ background: m.accent }} />
-            <p className="text-sm text-[#94A3B8] relative">{m.label}</p>
+            className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.10] transition-colors cursor-default">
+            <p className="text-sm text-[#94A3B8]">{m.label}</p>
             {loading ? (
               <div className="mt-3 h-7 bg-white/[0.07] rounded w-28 animate-pulse" />
             ) : (
-              <p className="text-[1.6rem] font-bold font-mono mt-3 leading-none relative tracking-tight" style={{ color: m.color }}>
+              <p className="text-[1.6rem] font-bold font-mono mt-3 leading-none tracking-tight" style={{ color: m.color }}>
                 {m.value}
               </p>
             )}
-            <p className="text-xs text-[#475569] mt-2 relative">{m.sub}</p>
+            <p className="text-xs text-[#475569] mt-2">{m.sub}</p>
           </div>
         ))}
       </div>

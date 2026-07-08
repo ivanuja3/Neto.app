@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ArrowLeft, Mail } from "lucide-react";
 import { sendPasswordReset } from "@/lib/auth";
 
@@ -16,24 +17,24 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError("");
 
-    const { error } = await sendPasswordReset(email);
-
-    setLoading(false);
-
-    if (error) {
+    try {
+      const { error } = await sendPasswordReset(email);
+      if (error) {
+        setError("No pudimos enviar el email. Probá de nuevo.");
+        return;
+      }
+      setSent(true);
+    } catch {
       setError("No pudimos enviar el email. Probá de nuevo.");
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    setSent(true);
   }
 
   return (
     <div className="w-full max-w-sm">
       <div className="flex items-center gap-3 justify-center mb-8">
-        <div className="w-9 h-9 rounded-xl bg-[#10B981] flex items-center justify-center">
-          <span className="text-[#080E1A] font-black text-base font-mono">N</span>
-        </div>
+        <Image src="/logo.png" alt="Neto" width={36} height={36} className="rounded-xl" />
         <span className="text-xl font-bold text-[#F1F5F9] tracking-tight">
           Neto<span className="text-[#10B981]">.app</span>
         </span>
@@ -65,7 +66,7 @@ export default function ForgotPasswordPage() {
                 <input
                   type="email"
                   required
-                  placeholder="ivan@tuempresa.com"
+                  placeholder="tu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors"

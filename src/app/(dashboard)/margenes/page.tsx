@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getPnlMonthly } from "@/lib/db/analytics";
 import { getTopProducts } from "@/lib/db/orders";
-import { Info } from "lucide-react";
+import { Info, AlertTriangle } from "lucide-react";
+import Link from "next/link";
 import { formatARS } from "@/lib/mock-data";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -63,29 +64,34 @@ export default function MargenesPage() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [pnlRes, prodRes] = await Promise.all([
-        getPnlMonthly(user!.id, 6),
-        getTopProducts(user!.id, 20),
-      ]);
-      setPnl((pnlRes.data ?? []).map((r: PnlRow) => ({
-        ...r,
-        ingresos:     Number(r.ingresos),
-        cogs:         Number(r.cogs),
-        cm1:          Number(r.cm1),      cm1_pct:      Number(r.cm1_pct),
-        marketing:    Number(r.marketing),
-        logistica:    Number(r.logistica),
-        cm2:          Number(r.cm2),      cm2_pct:      Number(r.cm2_pct),
-        gastos_fijos: Number(r.gastos_fijos),
-        cm3:          Number(r.cm3),      cm3_pct:      Number(r.cm3_pct),
-      })));
-      setProducts((prodRes.data ?? []).map((p: TopProduct) => ({
-        ...p,
-        ingresos:  Number(p.ingresos),
-        costo:     Number(p.costo),
-        margen:    Number(p.margen),
-        margen_pct: Number(p.margen_pct),
-      })));
-      setLoading(false);
+      try {
+        const [pnlRes, prodRes] = await Promise.all([
+          getPnlMonthly(user!.id, 6),
+          getTopProducts(user!.id, 20),
+        ]);
+        setPnl((pnlRes.data ?? []).map((r: PnlRow) => ({
+          ...r,
+          ingresos:     Number(r.ingresos),
+          cogs:         Number(r.cogs),
+          cm1:          Number(r.cm1),      cm1_pct:      Number(r.cm1_pct),
+          marketing:    Number(r.marketing),
+          logistica:    Number(r.logistica),
+          cm2:          Number(r.cm2),      cm2_pct:      Number(r.cm2_pct),
+          gastos_fijos: Number(r.gastos_fijos),
+          cm3:          Number(r.cm3),      cm3_pct:      Number(r.cm3_pct),
+        })));
+        setProducts((prodRes.data ?? []).map((p: TopProduct) => ({
+          ...p,
+          ingresos:  Number(p.ingresos),
+          costo:     Number(p.costo),
+          margen:    Number(p.margen),
+          margen_pct: Number(p.margen_pct),
+        })));
+      } catch (err) {
+        console.error("MargenesPage load error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [user]);
@@ -144,20 +150,50 @@ export default function MargenesPage() {
         )}
       </div>
 
+      {/* Banner datos incompletos */}
+      {!loading && mes && mes.ingresos > 0 && mes.cogs === 0 && (
+        <div className="flex items-start gap-3 bg-[#F59E0B]/[0.08] border border-[#F59E0B]/25 rounded-xl px-5 py-4">
+          <AlertTriangle className="w-4 h-4 text-[#F59E0B] shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#F59E0B]">
+              Los márgenes no son reales todavía
+            </p>
+            <p className="text-xs text-[#94A3B8] mt-0.5">
+              Tenés ventas registradas pero los costos de productos están en $0. CM1, CM2 y CM3 aparecen inflados artificialmente.
+            </p>
+          </div>
+          <Link href="/inventario"
+            className="shrink-0 text-[12px] font-semibold text-[#F59E0B] hover:opacity-80 transition-opacity whitespace-nowrap">
+            Cargar costos →
+          </Link>
+        </div>
+      )}
+
+      {/* Sin datos en absoluto */}
+      {!loading && !mes && (
+        <div className="flex items-start gap-3 bg-[#3B82F6]/[0.08] border border-[#3B82F6]/20 rounded-xl px-5 py-4">
+          <Info className="w-4 h-4 text-[#3B82F6] shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-[#3B82F6]">Todavía no hay datos para mostrar</p>
+            <p className="text-xs text-[#94A3B8] mt-0.5">
+              Registrá tus primeras ventas para ver los márgenes. Podés importar desde Excel o conectar Tienda Nube.
+            </p>
+          </div>
+          <Link href="/ventas" className="shrink-0 text-[12px] font-semibold text-[#3B82F6] hover:opacity-80 transition-opacity whitespace-nowrap">
+            Ir a Ventas →
+          </Link>
+        </div>
+      )}
+
       {/* CM1 → CM2 → CM3 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
           : CM_LEVELS.map((cm) => (
             <div key={cm.key}
-              className="relative bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 overflow-hidden hover:border-white/[0.12] hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-all duration-200 cursor-default"
+              className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.10] transition-colors cursor-default"
             >
-              <div className="absolute top-0 left-0 right-0 h-px"
-                style={{ background: `linear-gradient(90deg, transparent, ${cm.color}90, transparent)` }} />
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-2/3 h-8 blur-2xl opacity-[0.14] pointer-events-none"
-                style={{ background: cm.color }} />
-
-              <div className="flex items-start justify-between mb-2 relative">
+              <div className="flex items-start justify-between mb-2">
                 <span className="text-xs font-bold px-2 py-0.5 rounded-md font-mono"
                   style={{ background: `${cm.color}20`, color: cm.color }}>
                   {cm.key}
@@ -166,14 +202,14 @@ export default function MargenesPage() {
                   <Info className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <p className="text-xs text-[#64748B] mb-4 relative">{cm.label}</p>
-              <div className="text-[1.6rem] font-bold font-mono text-[#F1F5F9] tracking-tight relative leading-none">
+              <p className="text-xs text-[#64748B] mb-4">{cm.label}</p>
+              <div className="text-[1.6rem] font-bold font-mono text-[#F1F5F9] tracking-tight leading-none">
                 {formatARS(cm.value)}
               </div>
-              <div className="mt-1 text-lg font-bold font-mono relative" style={{ color: cm.color }}>
+              <div className="mt-1 text-lg font-bold font-mono" style={{ color: cm.color }}>
                 {cm.porcentaje}%
               </div>
-              <p className="text-[11px] text-[#475569] mt-3.5 leading-relaxed relative">{cm.description}</p>
+              <p className="text-[11px] text-[#475569] mt-3.5 leading-relaxed">{cm.description}</p>
             </div>
           ))}
       </div>

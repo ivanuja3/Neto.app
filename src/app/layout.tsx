@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Neto.app — Finanzas reales para tu negocio",
   description:
     "Sabé exactamente cuánto ganás neto. Métricas reales, márgenes sin Excel, sin mentiras.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,5 +1,633 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default function Home() {
-  redirect("/dashboard");
+import Link from "next/link";
+import { useAuth } from "@/components/auth-provider";
+import {
+  BarChart3,
+  TrendingUp,
+  Package,
+  Users,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  Store,
+  Target,
+  Calculator,
+  Bot,
+  Wallet,
+  Activity,
+  Menu,
+  X,
+} from "lucide-react";
+import { useState } from "react";
+
+/* ─── Paleta ─── */
+const G = "#10B981"; // verde
+const WA_BETA = "https://wa.me/5493518551669?text=" + encodeURIComponent("Hola Iván! Vi tu historia y me interesa sumarme a la beta de Neto.app.");
+const B = "#3B82F6"; // azul
+
+/* ─── Hero mockup (mini dashboard) ─── */
+function DashMockup() {
+  return (
+    <div
+      className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-white/[0.08]"
+      style={{ background: "#0C1424" }}
+    >
+      {/* Topbar */}
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.06]">
+        <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]/60" />
+        <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]/60" />
+        <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]/60" />
+        <span className="ml-3 text-[11px] text-[#475569]">Dashboard — Julio 2026</span>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-3 gap-3 p-4">
+        {[
+          { label: "Ingresos", value: "$2.840.000", color: G, up: true },
+          { label: "Margen neto", value: "34,2%", color: B, up: true },
+          { label: "Órdenes", value: "127", color: "#F59E0B", up: false },
+        ].map((k) => (
+          <div
+            key={k.label}
+            className="rounded-lg p-3 border border-white/[0.05]"
+            style={{ background: "#080E1A" }}
+          >
+            <p className="text-[10px] text-[#64748B]">{k.label}</p>
+            <p className="text-sm font-bold mt-1 font-mono" style={{ color: k.color }}>
+              {k.value}
+            </p>
+            <p className="text-[9px] mt-0.5" style={{ color: k.up ? G : "#EF4444" }}>
+              {k.up ? "↑ 12% vs mes ant." : "↓ 3% vs mes ant."}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Fake chart bars */}
+      <div className="px-4 pb-4">
+        <div
+          className="rounded-lg p-3 border border-white/[0.05]"
+          style={{ background: "#080E1A" }}
+        >
+          <p className="text-[10px] text-[#64748B] mb-3">Ventas por mes</p>
+          <div className="flex items-end gap-1.5 h-16">
+            {[40, 55, 48, 62, 71, 58, 80].map((h, i) => (
+              <div key={i} className="flex-1 rounded-sm" style={{
+                height: `${h}%`,
+                background: i === 6
+                  ? `linear-gradient(to top, ${G}, ${G}88)`
+                  : `rgba(16,185,129,0.18)`,
+              }} />
+            ))}
+          </div>
+          <div className="flex justify-between mt-1.5">
+            {["Ene","Feb","Mar","Abr","May","Jun","Jul"].map((m) => (
+              <span key={m} className="text-[8px] text-[#334155]">{m}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Gradient overlay bottom */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
+        style={{ background: "linear-gradient(to top, #0C1424, transparent)" }}
+      />
+    </div>
+  );
+}
+
+/* ─── Feature card ─── */
+function FeatureCard({
+  icon: Icon,
+  title,
+  desc,
+  accent,
+}: {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  accent: string;
+}) {
+  return (
+    <div className="group rounded-xl p-5 border border-white/[0.06] bg-[#0C1424] hover:border-white/[0.12] transition-all duration-200">
+      <div
+        className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
+        style={{ background: `${accent}18` }}
+      >
+        <Icon className="w-4.5 h-4.5" style={{ color: accent }} />
+      </div>
+      <h3 className="text-[15px] font-semibold text-[#F1F5F9] mb-1.5">{title}</h3>
+      <p className="text-[13px] text-[#64748B] leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
+/* ─── Nav ─── */
+function Nav({ authed }: { authed: boolean }) {
+  const [open, setOpen] = useState(false);
+  const links = [
+    { label: "Funcionalidades", href: "#features" },
+    { label: "Cómo funciona", href: "#como" },
+    { label: "Precios", href: "#precios" },
+  ];
+  return (
+    <nav className="sticky top-0 z-50 border-b border-white/[0.06] backdrop-blur-md"
+      style={{ background: "rgba(8,14,26,0.88)" }}>
+      <div className="max-w-6xl mx-auto px-5 flex items-center justify-between h-14">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+          <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[#080E1A] font-black text-sm"
+            style={{ background: G }}>N</span>
+          <span className="text-[#F1F5F9]">Neto</span>
+          <span style={{ color: G }}>.app</span>
+        </Link>
+
+        {/* Desktop links */}
+        <div className="hidden md:flex items-center gap-6">
+          {links.map((l) => (
+            <a key={l.href} href={l.href}
+              className="text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors">
+              {l.label}
+            </a>
+          ))}
+        </div>
+
+        {/* Desktop CTAs */}
+        <div className="hidden md:flex items-center gap-3">
+          {authed ? (
+            <Link href="/dashboard"
+              className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] transition-colors"
+              style={{ background: G }}>
+              Ir al dashboard <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          ) : (
+            <>
+              <Link href="/login"
+                className="text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors px-3 py-2">
+                Iniciar sesión
+              </Link>
+              <a href={WA_BETA} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] transition-colors"
+                style={{ background: G }}>
+                Solicitar acceso <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </>
+          )}
+        </div>
+
+        {/* Mobile menu toggle */}
+        <button className="md:hidden text-[#94A3B8]" onClick={() => setOpen(!open)}>
+          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Mobile menu */}
+      {open && (
+        <div className="md:hidden border-t border-white/[0.06] px-5 py-4 space-y-3"
+          style={{ background: "#080E1A" }}>
+          {links.map((l) => (
+            <a key={l.href} href={l.href} onClick={() => setOpen(false)}
+              className="block text-sm text-[#94A3B8] hover:text-[#F1F5F9] py-1">
+              {l.label}
+            </a>
+          ))}
+          <div className="pt-3 border-t border-white/[0.06] flex flex-col gap-2">
+            {authed ? (
+              <Link href="/dashboard"
+                className="text-center text-sm font-semibold px-4 py-2.5 rounded-lg text-[#080E1A]"
+                style={{ background: G }}>
+                Ir al dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login"
+                  className="text-center text-sm text-[#94A3B8] border border-white/[0.1] px-4 py-2.5 rounded-lg hover:border-white/[0.2]">
+                  Iniciar sesión
+                </Link>
+                <a href={WA_BETA} target="_blank" rel="noopener noreferrer"
+                  className="text-center text-sm font-semibold px-4 py-2.5 rounded-lg text-[#080E1A]"
+                  style={{ background: G }}>
+                  Solicitar acceso
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}
+
+/* ─── Página ─── */
+export default function LandingPage() {
+  const { user } = useAuth();
+  const authed = !!user;
+
+  const features = [
+    {
+      icon: BarChart3,
+      title: "Dashboard en tiempo real",
+      desc: "Ingresos, márgenes, órdenes y ROAS en un solo lugar. Sin Excel, sin cuentas manuales.",
+      accent: G,
+    },
+    {
+      icon: TrendingUp,
+      title: "Márgenes reales CM1/CM2/CM3",
+      desc: "Calculá tu contribución marginal después de costos, logística y marketing. Sabé qué producto te conviene.",
+      accent: B,
+    },
+    {
+      icon: Package,
+      title: "Inventario y stock",
+      desc: "Movimientos de stock, valorización del inventario, alertas de stock bajo y costo promedio ponderado.",
+      accent: "#F59E0B",
+    },
+    {
+      icon: Activity,
+      title: "Flujo de caja y proyecciones",
+      desc: "Anticipá si tu negocio va a tener saldo positivo el próximo mes antes de que sea tarde.",
+      accent: "#8B5CF6",
+    },
+    {
+      icon: Target,
+      title: "Meta Ads integrado",
+      desc: "Conectá tu cuenta de Meta Ads y mirá el ROAS real: gasto en publicidad versus ventas generadas.",
+      accent: "#EC4899",
+    },
+    {
+      icon: Store,
+      title: "Integración con Tienda Nube",
+      desc: "Sincronizá tus pedidos automáticamente desde Tienda Nube. Sin copiar y pegar nada.",
+      accent: "#06B6D4",
+    },
+    {
+      icon: Calculator,
+      title: "Impuestos y IIBB",
+      desc: "Calculá tu carga impositiva mensual incluyendo Ingresos Brutos por provincia y contribuciones.",
+      accent: "#F97316",
+    },
+    {
+      icon: Users,
+      title: "Clientes y proveedores",
+      desc: "Directorio completo con historial de compras, deuda pendiente y frecuencia de compra.",
+      accent: "#10B981",
+    },
+    {
+      icon: Bot,
+      title: "Neto IA (beta)",
+      desc: "Consultá tus números en lenguaje natural. ¿Qué producto me da más margen? ¿Cuándo voy a quedar sin stock?",
+      accent: G,
+    },
+  ];
+
+  const steps = [
+    {
+      n: "01",
+      title: "Registrate en 2 minutos",
+      desc: "Creá tu cuenta, elegí tu rubro y ya tenés acceso completo a todas las funcionalidades.",
+    },
+    {
+      n: "02",
+      title: "Conectá tu negocio",
+      desc: "Integrá tu Tienda Nube con un clic o cargá tus ventas manualmente. El sistema se adapta a vos.",
+    },
+    {
+      n: "03",
+      title: "Tomá decisiones con datos",
+      desc: "Mirá tus márgenes reales, proyectá el próximo mes y encontrá dónde está la plata de tu negocio.",
+    },
+  ];
+
+  const planFeatures = [
+    "Dashboard con KPIs en tiempo real",
+    "Ventas, inventario, clientes y proveedores",
+    "Márgenes CM1, CM2 y CM3",
+    "Flujo de caja y proyecciones 6 meses",
+    "Integración con Tienda Nube",
+    "Seguimiento de Meta Ads y ROAS",
+    "Cálculo de IIBB y costos fijos",
+    "Neto IA — preguntas en lenguaje natural",
+    "Soporte por WhatsApp",
+  ];
+
+  return (
+    <div className="min-h-screen text-[#F1F5F9]" style={{ background: "#080E1A" }}>
+      <Nav authed={authed} />
+
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden pt-20 pb-24 px-5">
+        {/* Background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-[0.07] blur-3xl pointer-events-none"
+          style={{ background: G }} />
+
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left */}
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] text-[12px] text-[#94A3B8] mb-6">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: G }} />
+              Beta cerrada — 10 lugares disponibles
+            </div>
+
+            <h1 className="text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] mb-5">
+              Sabé exactamente{" "}
+              <span style={{ color: G }}>cuánto ganás neto</span>{" "}
+              en tu negocio
+            </h1>
+
+            <p className="text-[17px] text-[#94A3B8] leading-relaxed mb-8 max-w-lg">
+              La plataforma de finanzas para ecommerce argentino. Márgenes reales,
+              inventario inteligente y proyecciones — sin Excel, sin cuentas a mano.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-10">
+              {authed ? (
+                <Link
+                  href="/dashboard"
+                  className="flex items-center justify-center gap-2 text-[15px] font-bold px-6 py-3.5 rounded-xl text-[#080E1A] hover:opacity-90 transition-opacity"
+                  style={{ background: G }}
+                >
+                  Ir al dashboard <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <a
+                  href={WA_BETA} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 text-[15px] font-bold px-6 py-3.5 rounded-xl text-[#080E1A] hover:opacity-90 transition-opacity"
+                  style={{ background: G }}
+                >
+                  Solicitar acceso beta <ArrowRight className="w-4 h-4" />
+                </a>
+              )}
+              {!authed && (
+                <Link
+                  href="/login"
+                  className="flex items-center justify-center gap-2 text-[15px] font-medium px-6 py-3.5 rounded-xl border border-white/[0.1] text-[#94A3B8] hover:border-white/[0.2] hover:text-[#F1F5F9] transition-all"
+                >
+                  Ya tengo cuenta
+                </Link>
+              )}
+            </div>
+
+            {/* Social proof mini */}
+            <div className="flex items-center gap-4 text-[13px] text-[#475569]">
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" style={{ color: G }} />
+                Sin tarjeta de crédito
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" style={{ color: G }} />
+                Setup en 2 minutos
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" style={{ color: G }} />
+                Datos 100% privados
+              </div>
+            </div>
+          </div>
+
+          {/* Right — mockup */}
+          <div className="relative hidden lg:block">
+            <div className="absolute -inset-4 rounded-3xl opacity-20 blur-2xl"
+              style={{ background: `linear-gradient(135deg, ${G}40, ${B}30)` }} />
+            <DashMockup />
+          </div>
+        </div>
+      </section>
+
+      {/* ── Logos strip ── */}
+      <div className="border-y border-white/[0.05] py-5">
+        <div className="max-w-6xl mx-auto px-5 flex flex-wrap items-center justify-center gap-8 text-[13px] text-[#334155]">
+          {[
+            "🇦🇷  Hecho para Argentina",
+            "🏪  Integración con Tienda Nube",
+            "📊  Compatible con Meta Ads",
+            "🔒  Datos encriptados con Supabase",
+            "⚡  Deploy en Vercel",
+          ].map((t) => (
+            <span key={t}>{t}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Pain ── */}
+      <section className="py-20 px-5">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-black tracking-tight mb-4">
+              Tu negocio crece, pero{" "}
+              <span style={{ color: "#EF4444" }}>¿sabés realmente cuánto ganás?</span>
+            </h2>
+            <p className="text-[16px] text-[#64748B] max-w-2xl mx-auto">
+              La mayoría de los dueños de ecommerce manejan sus finanzas con planillas
+              desactualizadas, sin saber el margen real ni cuándo van a quedar sin stock.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                emoji: "😤",
+                title: "Excel desactualizado",
+                desc: "Planillas que nunca están al día, fórmulas rotas y horas perdidas conciliando ventas.",
+                fix: "Neto actualiza tus números automáticamente.",
+              },
+              {
+                emoji: "🤷",
+                title: "Sin saber el margen real",
+                desc: "Vendiste $500.000 pero después de costos, envíos y publicidad ¿qué te quedó?",
+                fix: "Neto calcula CM1, CM2 y CM3 en tiempo real.",
+              },
+              {
+                emoji: "📦",
+                title: "Stock sin control",
+                desc: "Te quedaste sin el producto más vendido o acumulás mercadería que no rota.",
+                fix: "Neto alerta cuando el stock baja del umbral.",
+              },
+            ].map((p) => (
+              <div key={p.title}
+                className="rounded-xl p-5 border border-white/[0.06] bg-[#0C1424]">
+                <span className="text-3xl mb-3 block">{p.emoji}</span>
+                <h3 className="text-[15px] font-semibold text-[#F1F5F9] mb-2">{p.title}</h3>
+                <p className="text-[13px] text-[#64748B] mb-3">{p.desc}</p>
+                <p className="text-[12px] font-semibold" style={{ color: G }}>✓ {p.fix}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section id="features" className="py-20 px-5">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: G }}>
+              Funcionalidades
+            </p>
+            <h2 className="text-3xl lg:text-4xl font-black tracking-tight mb-4">
+              Todo lo que necesitás para gestionar tu negocio
+            </h2>
+            <p className="text-[16px] text-[#64748B] max-w-xl mx-auto">
+              Neto reemplaza 5 herramientas distintas en una sola plataforma pensada
+              para el ecommerce argentino.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map((f) => (
+              <FeatureCard key={f.title} {...f} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
+      <section id="como" className="py-20 px-5 border-t border-white/[0.04]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: B }}>
+              Cómo funciona
+            </p>
+            <h2 className="text-3xl lg:text-4xl font-black tracking-tight">
+              De cero a números reales en 3 pasos
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {steps.map((s, i) => (
+              <div key={s.n} className="relative">
+                {i < 2 && (
+                  <div className="hidden md:block absolute top-6 left-[calc(100%_-_16px)] w-1/2 h-px border-t border-dashed border-white/[0.08]" />
+                )}
+                <div className="text-5xl font-black mb-4 font-mono" style={{ color: `${G}22` }}>
+                  {s.n}
+                </div>
+                <h3 className="text-[16px] font-bold text-[#F1F5F9] mb-2">{s.title}</h3>
+                <p className="text-[13px] text-[#64748B] leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section id="precios" className="py-20 px-5">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: G }}>
+              Precios
+            </p>
+            <h2 className="text-3xl lg:text-4xl font-black tracking-tight mb-4">
+              Simple. Sin sorpresas.
+            </h2>
+            <p className="text-[16px] text-[#64748B]">
+              Un solo plan con todo incluido. Sin límites artificiales.
+            </p>
+          </div>
+
+          <div className="max-w-md mx-auto">
+            <div className="relative rounded-2xl border-2 p-8"
+              style={{ borderColor: G, background: "#0C1424" }}>
+              {/* Badge */}
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[12px] font-bold text-[#080E1A]"
+                style={{ background: G }}>
+                Beta cerrada — acceso por invitación
+              </div>
+
+              <div className="text-center mb-6 pt-2">
+                <p className="text-[13px] text-[#64748B] mb-2">Plan Neto</p>
+                <div className="flex items-end justify-center gap-1.5">
+                  <span className="text-5xl font-black text-[#F1F5F9]">$0</span>
+                  <span className="text-[#64748B] mb-2 text-sm">/ mes en beta</span>
+                </div>
+                <p className="text-[12px] text-[#475569] mt-1">
+                  Precio de lanzamiento próximamente
+                </p>
+              </div>
+
+              <ul className="space-y-3 mb-8">
+                {planFeatures.map((f) => (
+                  <li key={f} className="flex items-start gap-3">
+                    <Check className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: G }} />
+                    <span className="text-[13px] text-[#94A3B8]">{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {authed ? (
+                <Link href="/dashboard"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-[15px] font-bold text-[#080E1A] hover:opacity-90 transition-opacity"
+                  style={{ background: G }}>
+                  Ir al dashboard <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <a href={WA_BETA} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-[15px] font-bold text-[#080E1A] hover:opacity-90 transition-opacity"
+                  style={{ background: G }}>
+                  Solicitar acceso <ArrowRight className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
+      <section className="py-24 px-5 border-t border-white/[0.04]">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6"
+            style={{ background: `${G}18` }}>
+            <Wallet className="w-7 h-7" style={{ color: G }} />
+          </div>
+          <h2 className="text-3xl lg:text-5xl font-black tracking-tight mb-5">
+            Empezá a tomar decisiones{" "}
+            <span style={{ color: G }}>con números reales</span>
+          </h2>
+          <p className="text-[17px] text-[#64748B] mb-8 max-w-xl mx-auto">
+            Beta cerrada — 10 lugares para dueños de negocio de distintos rubros.
+            Acceso completamente gratuito durante la beta.
+          </p>
+          {authed ? (
+            <Link href="/dashboard"
+              className="inline-flex items-center gap-2 text-[16px] font-bold px-8 py-4 rounded-xl text-[#080E1A] hover:opacity-90 transition-opacity"
+              style={{ background: G }}>
+              Ir al dashboard <ArrowRight className="w-4.5 h-4.5" />
+            </Link>
+          ) : (
+            <a href={WA_BETA} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-[16px] font-bold px-8 py-4 rounded-xl text-[#080E1A] hover:opacity-90 transition-opacity"
+              style={{ background: G }}>
+              Solicitar acceso <ArrowRight className="w-4.5 h-4.5" />
+            </a>
+          )}
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="border-t border-white/[0.05] py-8 px-5">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <span className="w-6 h-6 rounded-md flex items-center justify-center text-[#080E1A] font-black text-xs"
+              style={{ background: G }}>N</span>
+            <span className="text-[#F1F5F9]">Neto</span>
+            <span style={{ color: G }}>.app</span>
+            <span className="text-[#334155] font-normal ml-2 text-xs">
+              © {new Date().getFullYear()} — Hecho con ♥ en Argentina
+            </span>
+          </div>
+          <div className="flex items-center gap-5 text-[13px] text-[#475569]">
+            <Link href="/terminos" className="hover:text-[#94A3B8] transition-colors">
+              Términos
+            </Link>
+            <Link href="/privacidad" className="hover:text-[#94A3B8] transition-colors">
+              Privacidad
+            </Link>
+            <Link href="/login" className="hover:text-[#94A3B8] transition-colors">
+              Iniciar sesión
+            </Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }

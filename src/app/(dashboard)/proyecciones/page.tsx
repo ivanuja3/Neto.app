@@ -36,9 +36,13 @@ function mesLabel(yyyymm: string) {
 }
 
 /* ── Funciones de proyección ── */
+const MONTH_ABBR = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
 function calcProyeccion(ultimoIngreso: number, cm3Base: number, roasBase: number, tasa: number): ProjectedMonth[] {
-  const MESES = ["Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-  return MESES.map((mes, i) => {
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
+    const mes = MONTH_ABBR[d.getMonth()];
     const ingresos = Math.round(ultimoIngreso * Math.pow(1 + tasa, i + 1));
     const cm3      = parseFloat(Math.min(cm3Base + i * 0.3, 38).toFixed(1));
     const ganancia = Math.round(ingresos * cm3 / 100);
@@ -97,24 +101,32 @@ export default function ProyeccionesPage() {
   const [pnlRows,       setPnlRows]       = useState<PnlRow[]>([]);
   const [escenario,     setEscenario]     = useState<EscenarioKey>("base");
   const [metaStr,       setMetaStr]       = useState("");
+  const [cuotaPrecio,   setCuotaPrecio]   = useState("50000");
+  const [cuotaInflStr,  setCuotaInflStr]  = useState("3");
+  const [cuotasN,       setCuotasN]       = useState("12");
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [kpiRes, pnlRes] = await Promise.all([
-        getKpisCurrentMonth(user!.id),
-        getPnlMonthly(user!.id, 6),
-      ]);
-      const kpi = kpiRes.data?.[0];
-      setUltimoIngreso(Number(kpi?.ingresos  ?? 0));
-      setCm3Actual(    Number(kpi?.cm3_pct   ?? 0));
-      setRoasActual(   Number(kpi?.roas      ?? 3));
-      setPnlRows((pnlRes.data ?? []).map((r: PnlRow) => ({
-        mes:      r.mes,
-        ingresos: Number(r.ingresos),
-        cm3_pct:  Number(r.cm3_pct),
-      })));
-      setLoading(false);
+      try {
+        const [kpiRes, pnlRes] = await Promise.all([
+          getKpisCurrentMonth(user!.id),
+          getPnlMonthly(user!.id, 6),
+        ]);
+        const kpi = kpiRes.data?.[0];
+        setUltimoIngreso(Number(kpi?.ingresos  ?? 0));
+        setCm3Actual(    Number(kpi?.cm3_pct   ?? 0));
+        setRoasActual(   Number(kpi?.roas      ?? 3));
+        setPnlRows((pnlRes.data ?? []).map((r: PnlRow) => ({
+          mes:      r.mes,
+          ingresos: Number(r.ingresos),
+          cm3_pct:  Number(r.cm3_pct),
+        })));
+      } catch (err) {
+        console.error("ProyeccionesPage load error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [user]);
@@ -145,10 +157,10 @@ export default function ProyeccionesPage() {
     : null;
 
   /* Impacto cuotas */
-  const precioHoy      = 50_000;
-  const cuotas         = 12;
-  const inflMensual    = 0.03;
-  const cuotaFija      = precioHoy / cuotas;
+  const precioHoy   = Math.max(1, parseFloat(cuotaPrecio.replace(/\D/g, "")) || 50_000);
+  const cuotas      = Math.max(1, parseInt(cuotasN) || 12);
+  const inflMensual = Math.max(0, (parseFloat(cuotaInflStr) || 3) / 100);
+  const cuotaFija   = precioHoy / cuotas;
   const valorRealUltimaCuota = cuotaFija / Math.pow(1 + inflMensual, cuotas);
   const perdidasInflacion    = precioHoy - Array.from({ length: cuotas }, (_, i) =>
     cuotaFija / Math.pow(1 + inflMensual, i + 1)
@@ -403,10 +415,41 @@ export default function ProyeccionesPage() {
               <p className="text-xs text-[#475569]">Lo que el Excel no te calcula</p>
             </div>
           </div>
-          <div className="bg-[#080E1A] rounded-xl p-4 mb-4 border border-white/[0.05]">
-            <p className="text-xs text-[#64748B] mb-1">Ejemplo: producto de</p>
-            <p className="text-2xl font-black font-mono text-[#F1F5F9]">{formatARS(precioHoy)}</p>
-            <p className="text-xs text-[#475569] mt-0.5">en 12 cuotas · inflación 3%/mes</p>
+          <div className="bg-[#080E1A] rounded-xl p-4 mb-4 border border-white/[0.05] space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] text-[#64748B] mb-1">Precio del producto ($)</p>
+                <input
+                  type="number" min="1" step="1000"
+                  value={cuotaPrecio}
+                  onChange={(e) => setCuotaPrecio(e.target.value)}
+                  className="w-full bg-[#0C1424] border border-white/[0.08] text-[#F1F5F9] rounded-lg px-2.5 py-1.5 text-sm font-mono outline-none focus:border-[#10B981]/50 transition-colors"
+                />
+              </div>
+              <div>
+                <p className="text-[10px] text-[#64748B] mb-1">Cuotas</p>
+                <input
+                  type="number" min="1" max="60" step="1"
+                  value={cuotasN}
+                  onChange={(e) => setCuotasN(e.target.value)}
+                  className="w-full bg-[#0C1424] border border-white/[0.08] text-[#F1F5F9] rounded-lg px-2.5 py-1.5 text-sm font-mono outline-none focus:border-[#10B981]/50 transition-colors"
+                />
+              </div>
+              <div>
+                <p className="text-[10px] text-[#64748B] mb-1">Inflación %/mes</p>
+                <input
+                  type="number" min="0" max="100" step="0.5"
+                  value={cuotaInflStr}
+                  onChange={(e) => setCuotaInflStr(e.target.value)}
+                  className="w-full bg-[#0C1424] border border-white/[0.08] text-[#F1F5F9] rounded-lg px-2.5 py-1.5 text-sm font-mono outline-none focus:border-[#10B981]/50 transition-colors"
+                />
+              </div>
+            </div>
+            <div className="pt-1 border-t border-white/[0.05]">
+              <p className="text-[10px] text-[#475569]">
+                {formatARS(precioHoy)} en {cuotas} cuotas · inflación {cuotaInflStr}%/mes
+              </p>
+            </div>
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2.5 border-b border-white/[0.05]">

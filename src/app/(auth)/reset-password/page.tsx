@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ArrowRight, Check } from "lucide-react";
 import { updatePassword } from "@/lib/auth";
 
@@ -22,27 +23,27 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
 
-    const { error } = await updatePassword(password);
-
-    setLoading(false);
-
-    if (error) {
+    try {
+      const { error } = await updatePassword(password);
+      if (error) {
+        setError("No pudimos actualizar tu contraseña. Probá pedir un nuevo link.");
+        return;
+      }
+      setDone(true);
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 2000);
+    } catch {
       setError("No pudimos actualizar tu contraseña. Probá pedir un nuevo link.");
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    setDone(true);
-    setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 2000);
   }
 
   return (
     <div className="w-full max-w-sm">
       <div className="flex items-center gap-3 justify-center mb-8">
-        <div className="w-9 h-9 rounded-xl bg-[#10B981] flex items-center justify-center">
-          <span className="text-[#080E1A] font-black text-base font-mono">N</span>
-        </div>
+        <Image src="/logo.png" alt="Neto" width={36} height={36} className="rounded-xl" />
         <span className="text-xl font-bold text-[#F1F5F9] tracking-tight">
           Neto<span className="text-[#10B981]">.app</span>
         </span>

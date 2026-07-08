@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getKpisCurrentMonth, getPnlMonthly } from "@/lib/db/analytics";
 import { getSalesByChannel, getTopProducts } from "@/lib/db/orders";
+import { getCompany } from "@/lib/db/companies";
 import Link from "next/link";
+import { AsesoramientoProfesional } from "@/components/asesoramiento-profesional";
+import { WelcomeModal } from "@/components/welcome-modal";
 import {
   TrendingUp,
   TrendingDown,
@@ -22,6 +25,14 @@ import {
   AlertTriangle,
   XCircle,
   Sparkles,
+  Check,
+  Star,
+  Trophy,
+  ChevronUp,
+  ChevronDown,
+  X,
+  Pencil,
+  Flag,
 } from "lucide-react";
 import {
   LineChart,
@@ -88,11 +99,13 @@ function SkeletonCard() {
 
 /* ─── KPI Card ─── */
 function KpiCard({
-  label, value, unit, change, changeLabel, icon: Icon, accent = "#10B981",
+  label, value, unit, change, changeLabel, icon: Icon, accent = "#10B981", description,
 }: {
   label: string; value: number; unit: string;
   change: number; changeLabel: string; icon: React.ElementType; accent?: string;
+  description?: string;
 }) {
+  const [flipped, setFlipped] = useState(false);
   const positive = change > 0;
   const neutral  = change === 0;
   const changeColor = neutral ? "#94A3B8" : positive ? "#10B981" : "#EF4444";
@@ -104,30 +117,66 @@ function KpiCard({
     : formatNumber(value);
 
   return (
-    <div className="relative bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-4 overflow-hidden group hover:border-white/[0.12] hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-200 cursor-default">
-      <div className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: `linear-gradient(90deg, transparent 0%, ${accent}90 35%, ${accent}90 65%, transparent 100%)` }} />
-      <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-2/3 h-12 blur-2xl opacity-[0.12] pointer-events-none"
-        style={{ background: accent }} />
-      <div className="flex items-start justify-between relative">
-        <span className="text-sm text-[#94A3B8]">{label}</span>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
-          style={{ background: `${accent}1A` }}>
-          <Icon className="w-[15px] h-[15px]" style={{ color: accent }} />
+    <div
+      className="relative cursor-pointer select-none"
+      style={{ perspective: "800px" }}
+      onMouseEnter={() => description && setFlipped(true)}
+      onMouseLeave={() => setFlipped(false)}
+      onClick={() => description && setFlipped(f => !f)}
+    >
+      <div
+        style={{
+          transformStyle: "preserve-3d",
+          transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          position: "relative",
+        }}
+      >
+        {/* Cara frontal */}
+        <div
+          className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-4"
+          style={{ backfaceVisibility: "hidden" }}
+        >
+          <div className="flex items-start justify-between">
+            <span className="text-sm text-[#94A3B8]">{label}</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: `${accent}15` }}>
+              <Icon className="w-[15px] h-[15px]" style={{ color: accent }} />
+            </div>
+          </div>
+          <div>
+            <div className="text-[1.6rem] font-bold text-[#F1F5F9] font-mono tracking-tight leading-none">
+              {displayValue}
+            </div>
+            <div className="flex items-center gap-2 mt-2.5">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-[3px] rounded-full"
+                style={{ background: `${changeColor}1A`, color: changeColor }}>
+                {neutral ? <Minus className="w-3 h-3" /> : positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {changeLabel}
+              </span>
+              <span className="text-[11px] text-[#475569]">vs mes anterior</span>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="relative">
-        <div className="text-[1.6rem] font-bold text-[#F1F5F9] font-mono tracking-tight leading-none">
-          {displayValue}
-        </div>
-        <div className="flex items-center gap-2 mt-2.5">
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-[3px] rounded-full"
-            style={{ background: `${changeColor}1A`, color: changeColor }}>
-            {neutral ? <Minus className="w-3 h-3" /> : positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {changeLabel}
-          </span>
-          <span className="text-[11px] text-[#475569]">vs mes anterior</span>
-        </div>
+
+        {/* Cara trasera */}
+        {description && (
+          <div
+            className="absolute inset-0 rounded-xl p-5 flex flex-col items-center justify-center gap-3"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+              background: `${accent}10`,
+              border: `1px solid ${accent}35`,
+            }}
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: `${accent}22` }}>
+              <Icon className="w-[15px] h-[15px]" style={{ color: accent }} />
+            </div>
+            <p className="text-xs text-[#94A3B8] text-center leading-relaxed">{description}</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -242,47 +291,261 @@ function Trend({ dir }: { dir: "up" | "down" | "neutral" }) {
   return <Minus className="w-4 h-4 text-[#475569]" />;
 }
 
-/* ─── Onboarding para usuarios nuevos ─── */
-const ONBOARDING_STEPS = [
-  { label: "Completá los datos de tu negocio", desc: "Nombre, CUIT, rubro y condición fiscal", href: "/configuracion", icon: Store },
-  { label: "Cargá tus productos", desc: "Precios, costos y stock de tu catálogo", href: "/inventario", icon: Package },
-  { label: "Registrá tu primera venta", desc: "Así empezás a ver tus métricas reales", href: "/ventas", icon: ShoppingCart },
-  { label: "Cargá tus costos fijos", desc: "Alquiler, sueldos, servicios y demás gastos", href: "/costos", icon: Calculator },
-];
+/* ─── Meta del mes ─── */
+function MetaMes({
+  ingresos, goal, userId, onSaved,
+}: {
+  ingresos: number; goal: number | null; userId: string; onSaved: (v: number | null) => void;
+}) {
+  const [editing, setEditing]   = useState(false);
+  const [input,   setInput]     = useState("");
+  const [saving,  setSaving]    = useState(false);
 
-function WelcomeOnboarding() {
+  const pct    = goal && goal > 0 ? Math.min(Math.round((ingresos / goal) * 100), 100) : 0;
+  const falta  = goal ? Math.max(goal - ingresos, 0) : 0;
+  const barColor = pct >= 100 ? "#10B981" : pct >= 60 ? "#F59E0B" : "#3B82F6";
+
+  async function save() {
+    const val = Number(input.replace(/\./g, "").replace(",", ".")) || null;
+    setSaving(true);
+    try {
+      const { updateCompany } = await import("@/lib/db/companies");
+      await updateCompany(userId, { monthly_goal: val });
+      onSaved(val);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!goal && !editing) {
+    return (
+      <button
+        onClick={() => { setInput(""); setEditing(true); }}
+        className="flex items-center gap-2 text-sm text-[#475569] hover:text-[#10B981] transition-colors border border-dashed border-white/[0.08] hover:border-[#10B981]/30 rounded-xl px-4 py-3 w-full"
+      >
+        <Flag className="w-4 h-4" />
+        Fijar meta de ventas del mes
+      </button>
+    );
+  }
+
   return (
-    <div className="bg-[#0C1424] border border-[#10B981]/20 rounded-2xl p-6 sm:p-8">
-      <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="w-4 h-4 text-[#10B981]" />
-        <span className="text-xs font-bold text-[#10B981] uppercase tracking-wider">Bienvenido a Neto</span>
-      </div>
-      <h2 className="text-xl font-bold text-[#F1F5F9]">Empecemos a armar tu negocio</h2>
-      <p className="text-sm text-[#94A3B8] mt-1.5 max-w-lg">
-        Tu dashboard se va a llenar de datos reales a medida que completes estos pasos. No hace falta seguir el orden.
-      </p>
+    <div className="rounded-2xl overflow-hidden border border-[#F59E0B]/20"
+      style={{ background: "linear-gradient(135deg, #0D1829 0%, #0C1424 100%)", boxShadow: "0 0 32px rgba(245,158,11,0.06)" }}>
+      <div className="px-5 py-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/15 flex items-center justify-center">
+              <Flag className="w-4 h-4 text-[#F59E0B]" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#F1F5F9] tracking-wide uppercase" style={{ fontSize: "11px", letterSpacing: "0.08em" }}>Meta del mes</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                <span className="text-[10px] text-[#10B981] font-semibold uppercase tracking-wider">Live</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl font-black tabular-nums" style={{ color: barColor }}>{pct}%</span>
+            {!editing && (
+              <button onClick={() => { setInput(goal?.toString() ?? ""); setEditing(true); }}
+                className="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center transition-colors">
+                <Pencil className="w-3.5 h-3.5 text-[#94A3B8]" />
+              </button>
+            )}
+          </div>
+        </div>
 
-      <div className="grid sm:grid-cols-2 gap-3 mt-6">
-        {ONBOARDING_STEPS.map((step) => {
-          const Icon = step.icon;
-          return (
-            <Link
-              key={step.href}
-              href={step.href}
-              className="group flex items-start gap-3 bg-[#080E1A] border border-white/[0.06] rounded-xl p-4 hover:border-[#10B981]/30 transition-colors"
-            >
-              <div className="w-9 h-9 rounded-lg bg-[#10B981]/10 flex items-center justify-center shrink-0">
-                <Icon className="w-4 h-4 text-[#10B981]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#F1F5F9]">{step.label}</p>
-                <p className="text-xs text-[#475569] mt-0.5">{step.desc}</p>
-              </div>
-              <ArrowRight className="w-4 h-4 text-[#475569] group-hover:text-[#10B981] group-hover:translate-x-0.5 transition-all shrink-0 mt-2.5" />
-            </Link>
-          );
-        })}
+        {/* Barra */}
+        {goal && (
+          <>
+            <div className="h-3 bg-white/[0.05] rounded-full overflow-hidden mb-2">
+              <div className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${barColor}cc, ${barColor})` }} />
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[#94A3B8]">
+                {formatARS(ingresos)} facturados
+              </span>
+              <span className="text-[#475569]">
+                {pct < 100 ? `Faltan ${formatARS(falta)}` : "Meta alcanzada"}
+              </span>
+              <span className="text-[#475569]">Meta: {formatARS(goal)}</span>
+            </div>
+          </>
+        )}
+
+        {/* Input edición */}
+        {editing && (
+          <div className="flex gap-2 mt-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && save()}
+              placeholder="Ej: 500000"
+              autoFocus
+              className="flex-1 bg-[#080E1A] border border-white/[0.10] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#F59E0B]/50 transition-colors"
+            />
+            <button onClick={save} disabled={saving}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-[#080E1A] disabled:opacity-60 transition-colors"
+              style={{ background: "#F59E0B" }}>
+              {saving ? "..." : "Guardar"}
+            </button>
+            <button onClick={() => setEditing(false)}
+              className="px-3 py-2 rounded-lg text-sm text-[#475569] hover:text-[#94A3B8] border border-white/[0.06] transition-colors">
+              Cancelar
+            </button>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+/* ─── Checklist de setup inicial ─── */
+type SetupStep = {
+  label: string;
+  desc: string;
+  href: string;
+  done: boolean;
+  icon: React.ElementType;
+  accent: string;
+};
+
+const STEP_ACCENTS = ["#F97316", "#3B82F6", "#10B981", "#8B5CF6"];
+
+function SetupChecklist({ steps }: { steps: SetupStep[] }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  const done  = steps.filter((s) => s.done).length;
+  const total = steps.length;
+  const pct   = Math.round((done / total) * 100);
+
+  if (done === total || dismissed) return null;
+
+  const activeIdx = steps.findIndex((s) => !s.done);
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ boxShadow: "0 0 0 1px rgba(59,130,246,0.20), 0 4px 32px rgba(59,130,246,0.07)" }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#0D1829] via-[#0C1424] to-[#0D1829] border border-[#3B82F6]/20 rounded-t-2xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #F97316, #EF4444)" }}>
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-[#F1F5F9]">Primeros pasos</p>
+            <p className="text-xs text-[#475569]">{done} de {total} completados</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold bg-[#3B82F6] text-white px-2.5 py-1 rounded-full tabular-nums">
+            {pct}%
+          </span>
+          <button
+            onClick={() => setCollapsed((v) => !v)}
+            className="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center transition-colors"
+          >
+            {collapsed
+              ? <ChevronDown className="w-4 h-4 text-[#94A3B8]" />
+              : <ChevronUp   className="w-4 h-4 text-[#94A3B8]" />}
+          </button>
+          <button
+            onClick={() => setDismissed(true)}
+            className="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center transition-colors"
+          >
+            <X className="w-4 h-4 text-[#94A3B8]" />
+          </button>
+        </div>
+      </div>
+
+      {/* Steps */}
+      {!collapsed && (
+        <div className="bg-[#080E1A] border-x border-[#3B82F6]/15">
+          {steps.map((step, i) => {
+            const Icon    = step.icon;
+            const isActive  = i === activeIdx;
+            const isLocked  = !step.done && i > activeIdx;
+            const accent    = step.accent;
+
+            return (
+              <div
+                key={step.href}
+                className={`flex items-center gap-4 px-5 py-4 border-b border-white/[0.04] last:border-b-0 transition-colors ${
+                  isActive ? "bg-[#0D1829]" : ""
+                }`}
+                style={isActive ? { borderLeft: `3px solid ${accent}` } : { borderLeft: "3px solid transparent" }}
+              >
+                {/* Icon */}
+                {step.done ? (
+                  <div className="w-10 h-10 rounded-full bg-[#10B981] flex items-center justify-center shrink-0">
+                    <Check className="w-5 h-5 text-white" />
+                  </div>
+                ) : isActive ? (
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${accent}dd, ${accent}99)` }}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5 text-[#1E293B]" />
+                  </div>
+                )}
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-semibold leading-tight ${
+                    step.done ? "text-[#10B981]" : isLocked ? "text-[#334155]" : "text-[#F1F5F9]"
+                  }`}>
+                    {step.label}
+                  </p>
+                  <p className={`text-xs mt-0.5 ${isLocked ? "text-[#1E293B]" : "text-[#475569]"}`}>
+                    {step.desc}
+                  </p>
+                </div>
+
+                {/* CTA */}
+                {isActive && (
+                  <Link
+                    href={step.href}
+                    className="flex items-center gap-1.5 text-white text-sm font-bold px-4 py-2 rounded-xl transition-all active:scale-95 shrink-0"
+                    style={{ background: accent }}
+                  >
+                    ¡Empezar! <ArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
+                {step.done && (
+                  <span className="text-xs font-semibold text-[#10B981] shrink-0">Listo</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer con barra de progreso */}
+      {!collapsed && (
+        <div className="bg-[#080E1A] border border-t-0 border-[#3B82F6]/15 rounded-b-2xl px-5 py-3 flex items-center gap-3">
+          <Trophy className="w-4 h-4 text-[#F59E0B] shrink-0" />
+          <span className="text-xs text-[#475569]">{done} de {total} completados</span>
+          <div className="flex-1 h-1 bg-white/[0.05] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${pct}%`, background: "linear-gradient(90deg, #3B82F6, #10B981)" }}
+            />
+          </div>
+          <span className="text-xs font-bold text-[#3B82F6] tabular-nums">{pct}%</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -295,21 +558,33 @@ export default function DashboardPage() {
   const [pnlData, setPnlData]   = useState<PnlRow[]>([]);
   const [channels, setChannels] = useState<ChannelRow[]>([]);
   const [topProds, setTopProds] = useState<TopProductRow[]>([]);
+  const [company,    setCompany]   = useState<{ name: string; industry?: string | null; monthly_goal?: number | null } | null>(null);
+  const [monthlyGoal, setMonthlyGoal] = useState<number | null>(null);
+  const [loadError,  setLoadError] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [kpiRes, pnlRes, chanRes, topRes] = await Promise.all([
-        getKpisCurrentMonth(user!.id),
-        getPnlMonthly(user!.id, 6),
-        getSalesByChannel(user!.id, 1),
-        getTopProducts(user!.id, 10),
-      ]);
-      setKpiData(kpiRes.data?.[0] ?? null);
-      setPnlData(pnlRes.data ?? []);
-      setChannels(chanRes.data ?? []);
-      setTopProds(topRes.data ?? []);
-      setLoading(false);
+      try {
+        const [kpiRes, pnlRes, chanRes, topRes, comp] = await Promise.all([
+          getKpisCurrentMonth(user!.id),
+          getPnlMonthly(user!.id, 6),
+          getSalesByChannel(user!.id, 1),
+          getTopProducts(user!.id, 10),
+          getCompany(user!.id),
+        ]);
+        setKpiData(kpiRes.data?.[0] ?? null);
+        setPnlData(pnlRes.data ?? []);
+        setChannels(chanRes.data ?? []);
+        setTopProds(topRes.data ?? []);
+        setCompany(comp ? { name: comp.name ?? "", industry: comp.industry, monthly_goal: comp.monthly_goal } : null);
+        setMonthlyGoal(comp?.monthly_goal ?? null);
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+        setLoadError(true);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [user]);
@@ -320,15 +595,44 @@ export default function DashboardPage() {
   const roas   = Number(kpiData?.roas      ?? 0);
   const spend  = Number(kpiData?.spend_ads ?? 0);
   const mer    = spend > 0 ? +(ing / spend).toFixed(2) : 0;
+  const ordenes = Number(kpiData?.ordenes ?? 0);
+  const cpa    = spend > 0 && ordenes > 0 ? Math.round(spend / ordenes) : 0;
   const vsMes  = Number(kpiData?.vs_mes_anterior ?? 0);
+  const isEcommerce = !company?.industry ||
+    ["ecommerce", "tienda", "retail", "comercio"].some(k => company.industry?.toLowerCase().includes(k));
 
   const kpiCards = {
-    ingresos:      { label: "Ingresos del mes",  value: ing,   unit: "ARS", change: vsMes, changeLabel: `${vsMes > 0 ? "+" : ""}${vsMes.toFixed(1)}%` },
-    cm3:           { label: "CM3 (Margen neto)", value: cm3Pct, unit: "%",  change: 0,     changeLabel: "—" },
-    roasReal:      { label: "ROAS Real",          value: roas,   unit: "x",  change: 0,     changeLabel: "—" },
-    mer:           { label: "MER",                value: mer,    unit: "x",  change: 0,     changeLabel: "—" },
-    ordenes:       { label: "Órdenes",            value: Number(kpiData?.ordenes ?? 0),         unit: "",    change: 0, changeLabel: "—" },
-    ticketPromedio:{ label: "Ticket promedio",    value: Number(kpiData?.ticket_promedio ?? 0), unit: "ARS", change: 0, changeLabel: "—" },
+    ingresos: {
+      label: "Ingresos del mes", value: ing, unit: "ARS", change: vsMes,
+      changeLabel: `${vsMes > 0 ? "+" : ""}${vsMes.toFixed(1)}%`,
+      description: "Total facturado este mes. Es la plata que entró antes de descontar costos y gastos.",
+    },
+    cm3: {
+      label: "Ganancia neta", value: cm3Pct, unit: "%", change: 0, changeLabel: "—",
+      description: "Lo que te queda después de pagar el costo de los productos, los costos fijos y la publicidad. Tu ganancia real.",
+    },
+    roasReal: {
+      label: "ROAS Real", value: roas, unit: "x", change: 0, changeLabel: "—",
+      description: "Por cada $1 invertido en anuncios, cuántos $1 de ventas generás. Ej: 4x significa que recuperás 4 veces lo invertido.",
+    },
+    mer: {
+      label: "Eficiencia de marketing", value: mer, unit: "x", change: 0, changeLabel: "—",
+      description: "Relación entre todas tus ventas y todo lo que gastás en marketing. Más alto = más eficiente. Lo ideal es superar 3x.",
+    },
+    cpa: {
+      label: "CPA", value: cpa, unit: "ARS", change: 0, changeLabel: "—",
+      description: "Cuánto te cuesta conseguir cada venta con publicidad. Calculado como gasto en ads dividido la cantidad de órdenes. Mientras más bajo, más eficiente tu inversión.",
+    },
+    ordenes: {
+      label: "Órdenes",
+      value: ordenes, unit: "", change: 0, changeLabel: "—",
+      description: "Cantidad de pedidos recibidos este mes en todos tus canales de venta.",
+    },
+    ticketPromedio: {
+      label: "Ticket promedio",
+      value: Number(kpiData?.ticket_promedio ?? 0), unit: "ARS", change: 0, changeLabel: "—",
+      description: "Cuánto gasta en promedio cada cliente por pedido. Subirlo es una de las formas más rápidas de aumentar tu ganancia.",
+    },
   };
 
   const ingresosPorMes = pnlData.map((r) => ({
@@ -361,23 +665,41 @@ export default function DashboardPage() {
     ? +(100 - Number(lastPnl?.cm3_pct ?? 0)).toFixed(1)
     : 0;
 
-  const isNewUser = !loading && Number(kpiData?.ordenes ?? 0) === 0 && topProds.length === 0 && channels.length === 0;
+  const setupSteps: SetupStep[] = [
+    { label: "Configurá tu negocio", desc: "Nombre, rubro y condición fiscal", href: "/configuracion", icon: Store,        accent: STEP_ACCENTS[0], done: !!(company?.name && company.name !== "Mi negocio") },
+    { label: "Cargá tus productos",  desc: "Precio de venta, costo y stock",   href: "/inventario",    icon: Package,      accent: STEP_ACCENTS[1], done: topProds.length > 0 },
+    { label: "Registrá una venta",   desc: "Así empezás a ver tus métricas",   href: "/ventas",        icon: ShoppingCart, accent: STEP_ACCENTS[2], done: Number(kpiData?.ordenes ?? 0) > 0 },
+    { label: "Cargá tus costos",     desc: "Alquiler, sueldos y otros gastos", href: "/costos",        icon: Calculator,   accent: STEP_ACCENTS[3], done: Number(lastPnl?.cogs ?? 0) > 0 },
+  ];
 
   /* ── Render ── */
   return (
     <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
+      {/* Modal de bienvenida — solo primer login */}
+      {user && !loading && (
+        <WelcomeModal
+          userId={user.id}
+          email={user.email ?? undefined}
+          businessName={company?.name ?? undefined}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">
+              {company?.name && company.name !== "Mi negocio"
+                ? company.name
+                : "Dashboard"}
+            </h1>
             <div className="flex items-center gap-1.5 bg-[#10B981]/10 border border-[#10B981]/25 rounded-full px-2.5 py-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
               <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-wider">Live</span>
             </div>
           </div>
           <p className="text-sm text-[#64748B] mt-1">
-            {new Date().toLocaleString("es-AR", { month: "long", year: "numeric" }).replace(/^\w/, (c) => c.toUpperCase())} · Supabase
+            {new Date().toLocaleString("es-AR", { month: "long", year: "numeric" }).replace(/^\w/, (c) => c.toUpperCase())} · {company?.name && company.name !== "Mi negocio" ? "Dashboard" : "Neto.app"}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -393,21 +715,41 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {!loading && isNewUser ? (
-        <WelcomeOnboarding />
-      ) : (
-      <>
+      {/* Error de carga */}
+      {loadError && (
+        <div className="flex items-center gap-2 bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444] text-sm px-4 py-3 rounded-xl">
+          <XCircle className="w-4 h-4 shrink-0" />
+          No se pudieron cargar los datos. Revisá tu conexión y recargá la página.
+        </div>
+      )}
+
+      {/* Meta del mes */}
+      {!loading && !loadError && user && (
+        <MetaMes
+          ingresos={ing}
+          goal={monthlyGoal}
+          userId={user.id}
+          onSaved={setMonthlyGoal}
+        />
+      )}
+
+      {/* Setup checklist — visible hasta completar los 4 pasos */}
+      {!loading && !loadError && <SetupChecklist steps={setupSteps} />}
+
       {/* KPI Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+        <div className={`grid grid-cols-2 gap-4 ${isEcommerce ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+          {Array.from({ length: isEcommerce ? 5 : 4 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard label={kpiCards.ingresos.label}  value={kpiCards.ingresos.value}  unit={kpiCards.ingresos.unit}  change={kpiCards.ingresos.change}  changeLabel={kpiCards.ingresos.changeLabel}  icon={Store}     accent="#10B981" />
-          <KpiCard label={kpiCards.cm3.label}        value={kpiCards.cm3.value}        unit={kpiCards.cm3.unit}        change={kpiCards.cm3.change}        changeLabel={kpiCards.cm3.changeLabel}        icon={Target}    accent="#3B82F6" />
-          <KpiCard label={kpiCards.roasReal.label}   value={kpiCards.roasReal.value}   unit={kpiCards.roasReal.unit}   change={kpiCards.roasReal.change}   changeLabel={kpiCards.roasReal.changeLabel}   icon={BarChart3} accent="#F59E0B" />
-          <KpiCard label={kpiCards.mer.label}        value={kpiCards.mer.value}        unit={kpiCards.mer.unit}        change={kpiCards.mer.change}        changeLabel={kpiCards.mer.changeLabel}        icon={ShoppingBag} accent="#8B5CF6" />
+        <div className={`grid grid-cols-2 gap-4 ${isEcommerce ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+          <KpiCard label={kpiCards.ingresos.label}  value={kpiCards.ingresos.value}  unit={kpiCards.ingresos.unit}  change={kpiCards.ingresos.change}  changeLabel={kpiCards.ingresos.changeLabel}  icon={Store}       accent="#10B981" description={kpiCards.ingresos.description} />
+          <KpiCard label={kpiCards.cm3.label}        value={kpiCards.cm3.value}        unit={kpiCards.cm3.unit}        change={kpiCards.cm3.change}        changeLabel={kpiCards.cm3.changeLabel}        icon={Target}      accent="#3B82F6" description={kpiCards.cm3.description} />
+          <KpiCard label={kpiCards.roasReal.label}   value={kpiCards.roasReal.value}   unit={kpiCards.roasReal.unit}   change={kpiCards.roasReal.change}   changeLabel={kpiCards.roasReal.changeLabel}   icon={BarChart3}   accent="#F59E0B" description={kpiCards.roasReal.description} />
+          <KpiCard label={kpiCards.mer.label}        value={kpiCards.mer.value}        unit={kpiCards.mer.unit}        change={kpiCards.mer.change}        changeLabel={kpiCards.mer.changeLabel}        icon={ShoppingBag} accent="#8B5CF6" description={kpiCards.mer.description} />
+          {isEcommerce && (
+            <KpiCard label={kpiCards.cpa.label} value={kpiCards.cpa.value} unit={kpiCards.cpa.unit} change={kpiCards.cpa.change} changeLabel={kpiCards.cpa.changeLabel} icon={ShoppingCart} accent="#EC4899" description={kpiCards.cpa.description} />
+          )}
         </div>
       )}
 
@@ -519,7 +861,14 @@ export default function DashboardPage() {
                     <td className="px-5 py-3.5"><span className="text-xs font-mono text-[#475569] font-medium">{String(i + 1).padStart(2, "0")}</span></td>
                     <td className="px-5 py-3.5">
                       <div>
-                        <p className="text-[#F1F5F9] font-medium text-[13px]">{sku.nombre}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[#F1F5F9] font-medium text-[13px]">{sku.nombre}</p>
+                          {i === 0 && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-[#F59E0B]/15 text-[#FCD34D] border border-[#F59E0B]/20 px-1.5 py-[2px] rounded-md">
+                              <Star className="w-2.5 h-2.5" /> Estrella
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-[#475569] font-mono mt-0.5">{sku.sku}</p>
                       </div>
                     </td>
@@ -558,8 +907,9 @@ export default function DashboardPage() {
             change={kpiCards.ticketPromedio.change} changeLabel={kpiCards.ticketPromedio.changeLabel} icon={Store} accent="#A78BFA" />
         </div>
       )}
-      </>
-      )}
+      <div className="px-6 pb-6 mt-4">
+        <AsesoramientoProfesional />
+      </div>
     </div>
   );
 }

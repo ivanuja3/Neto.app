@@ -19,8 +19,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (user && ensuredFor.current !== user.id) {
       ensuredFor.current = user.id;
-      ensureCompany(user.id, user.email ?? null).catch(() => {
-        ensuredFor.current = null;
+      const businessName = (user.user_metadata?.business_name as string | undefined) ?? null;
+      const industry = (user.user_metadata?.industry as string | undefined) ?? null;
+      ensureCompany(user.id, user.email ?? null, businessName, industry).catch((err) => {
+        console.error("ensureCompany failed:", err);
       });
     }
   }, [user]);

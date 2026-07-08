@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Check, Mail } from "lucide-react";
 import { signUp } from "@/lib/auth";
+import { INDUSTRIAS } from "@/lib/constants";
 
 const PLANES = [
   { id: "starter", label: "Starter", precio: "$19/mes", limite: "Hasta 300 órdenes/mes" },
@@ -11,7 +13,7 @@ const PLANES = [
 ];
 
 export default function SignupPage() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [plan, setPlan] = useState("pro");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,33 +22,45 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [industry, setIndustry] = useState("");
 
   function handleStep1(e: React.FormEvent) {
     e.preventDefault();
     setStep(2);
   }
 
-  async function handleStep2(e: React.FormEvent) {
+  function handleStep2(e: React.FormEvent) {
+    e.preventDefault();
+    setStep(3);
+  }
+
+  async function handleStep3(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { data, error } = await signUp(email, password, firstName, lastName);
+    try {
+      const { data, error } = await signUp(email, password, firstName, lastName, businessName, industry, plan);
 
-    if (error) {
-      setError(error.message === "User already registered"
-        ? "Ya existe una cuenta con ese email"
-        : "No pudimos crear tu cuenta. Probá de nuevo.");
+      if (error) {
+        setError(error.message === "User already registered"
+          ? "Ya existe una cuenta con ese email"
+          : "No pudimos crear tu cuenta. Probá de nuevo.");
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
-      return;
-    }
 
-    setLoading(false);
-
-    if (data.session) {
-      window.location.href = "/dashboard";
-    } else {
-      setStep(3);
+      if (data?.session) {
+        window.location.href = "/dashboard";
+      } else {
+        setStep(4);
+      }
+    } catch {
+      setError("No pudimos crear tu cuenta. Probá de nuevo.");
+      setLoading(false);
     }
   }
 
@@ -54,18 +68,16 @@ export default function SignupPage() {
     <div className="w-full max-w-sm">
       {/* Logo */}
       <div className="flex items-center gap-3 justify-center mb-8">
-        <div className="w-9 h-9 rounded-xl bg-[#10B981] flex items-center justify-center">
-          <span className="text-[#080E1A] font-black text-base font-mono">N</span>
-        </div>
+        <Image src="/logo.png" alt="Neto" width={36} height={36} className="rounded-xl" />
         <span className="text-xl font-bold text-[#F1F5F9] tracking-tight">
           Neto<span className="text-[#10B981]">.app</span>
         </span>
       </div>
 
       {/* Steps */}
-      {step < 3 && (
+      {step < 4 && (
         <div className="flex items-center gap-2 justify-center mb-6">
-          {[1, 2].map((s) => (
+          {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center gap-2">
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
@@ -74,7 +86,7 @@ export default function SignupPage() {
               >
                 {s < step ? <Check className="w-3.5 h-3.5" /> : s}
               </div>
-              {s < 2 && <div className={`w-12 h-px ${step > s ? "bg-[#10B981]" : "bg-white/[0.06]"}`} />}
+              {s < 3 && <div className={`w-12 h-px ${step > s ? "bg-[#10B981]" : "bg-white/[0.06]"}`} />}
             </div>
           ))}
         </div>
@@ -91,18 +103,18 @@ export default function SignupPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">Nombre</label>
-                  <input required type="text" placeholder="Iván" value={firstName} onChange={(e) => setFirstName(e.target.value)}
+                  <input required type="text" placeholder="María" value={firstName} onChange={(e) => setFirstName(e.target.value)}
                     className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">Apellido</label>
-                  <input required type="text" placeholder="Ujaldón" value={lastName} onChange={(e) => setLastName(e.target.value)}
+                  <input required type="text" placeholder="García" value={lastName} onChange={(e) => setLastName(e.target.value)}
                     className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">Email</label>
-                <input required type="email" placeholder="ivan@tuempresa.com" value={email} onChange={(e) => setEmail(e.target.value)}
+                <input required type="email" placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors" />
               </div>
               <div>
@@ -125,6 +137,34 @@ export default function SignupPage() {
         )}
 
         {step === 2 && (
+          <>
+            <div className="mb-6">
+              <h1 className="text-lg font-bold text-[#F1F5F9]">Contanos de tu negocio</h1>
+              <p className="text-sm text-[#94A3B8] mt-1">Así personalizamos Neto para tu rubro</p>
+            </div>
+            <form onSubmit={handleStep2} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">Nombre de tu negocio</label>
+                <input required type="text" placeholder="Mi negocio" value={businessName} onChange={(e) => setBusinessName(e.target.value)}
+                  className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">¿A qué rubro pertenece?</label>
+                <select required value={industry} onChange={(e) => setIndustry(e.target.value)}
+                  className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors">
+                  <option value="" disabled>Elegí una categoría</option>
+                  {INDUSTRIAS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
+                </select>
+              </div>
+              <button type="submit"
+                className="w-full flex items-center justify-center gap-2 bg-[#10B981] text-[#080E1A] font-semibold py-2.5 rounded-lg text-sm hover:bg-[#0D9268] transition-colors">
+                Siguiente <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          </>
+        )}
+
+        {step === 3 && (
           <>
             <div className="mb-6">
               <h1 className="text-lg font-bold text-[#F1F5F9]">Elegí tu plan</h1>
@@ -175,7 +215,7 @@ export default function SignupPage() {
               </p>
             )}
 
-            <form onSubmit={handleStep2}>
+            <form onSubmit={handleStep3}>
               <button
                 type="submit"
                 disabled={loading}
@@ -191,7 +231,7 @@ export default function SignupPage() {
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="text-center py-2">
             <div className="w-12 h-12 rounded-full bg-[#10B981]/10 flex items-center justify-center mx-auto mb-4">
               <Mail className="w-6 h-6 text-[#10B981]" />
@@ -205,7 +245,7 @@ export default function SignupPage() {
         )}
       </div>
 
-      {step < 3 && (
+      {step < 4 && (
         <p className="text-center text-sm text-[#475569] mt-6">
           ¿Ya tenés cuenta?{" "}
           <Link href="/login" className="text-[#10B981] hover:opacity-80 font-medium transition-opacity">
