@@ -23,6 +23,7 @@ import {
   X,
   ClipboardList,
   ScanLine,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./auth-provider";
@@ -55,9 +56,10 @@ const NAV_SECTIONS = [
   {
     label: "Crecimiento",
     items: [
-      { key: "ads",       label: "Meta Ads",      href: "/ads",           icon: Megaphone },
-      { key: "impuestos", label: "Impuestos AR",  href: "/impuestos",     icon: FileText },
-      { key: "ia",        label: "Neto IA",       href: "/ia",            icon: Bot, badge: "Beta" as const },
+      { key: "ads",           label: "Meta Ads",      href: "/ads",           icon: Megaphone },
+      { key: "impuestos",     label: "Impuestos AR",  href: "/impuestos",     icon: FileText },
+      { key: "contabilidad",  label: "Contabilidad",  href: "/contabilidad",  icon: BookOpen, badge: "Preview" as const },
+      { key: "ia",            label: "Neto IA",       href: "/ia",            icon: Bot, badge: "Beta" as const },
     ],
   },
 ];
@@ -105,7 +107,9 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
               {section.items.filter((item) => enabledKeys.includes(item.key as never)).map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                const isBeta = (item as { badge?: string }).badge === "Beta";
+                const badge  = (item as { badge?: string }).badge;
+                const isBeta    = badge === "Beta";
+                const isPreview = badge === "Preview";
 
                 return (
                   <Link
@@ -131,14 +135,15 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
                     <span className={cn("flex-1 text-[13px] leading-none", active && "font-semibold")}>
                       {item.label}
                     </span>
-                    {(item as { badge?: string }).badge && (
+                    {badge && (
                       <span className={cn(
                         "text-[9px] font-bold px-1.5 py-[3px] rounded-md tracking-wide",
                         active
-                          ? "bg-[#10B981]/20 text-[#10B981]"
+                          ? isPreview ? "bg-[#8B5CF6]/20 text-[#A78BFA]" : "bg-[#10B981]/20 text-[#10B981]"
+                          : isPreview ? "bg-[#8B5CF6]/15 text-[#A78BFA] border border-[#8B5CF6]/20"
                           : "bg-gradient-to-r from-[#10B981]/20 to-[#06B6D4]/15 text-[#34D399] border border-[#10B981]/15"
                       )}>
-                        {(item as { badge?: string }).badge}
+                        {badge}
                       </span>
                     )}
                   </Link>

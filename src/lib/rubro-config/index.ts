@@ -4,12 +4,12 @@
 type NavKey =
   | "dashboard" | "ventas" | "presupuestos" | "caja" | "inventario" | "clientes" | "proveedores"
   | "margenes" | "costos" | "flujo" | "proyecciones"
-  | "ads" | "impuestos" | "ia";
+  | "ads" | "impuestos" | "contabilidad" | "ia";
 
 const BASE: NavKey[] = [
   "dashboard", "ventas", "inventario", "clientes", "proveedores",
   "margenes", "costos", "flujo", "proyecciones",
-  "ads", "impuestos", "ia",
+  "ads", "impuestos", "contabilidad", "ia",
 ];
 
 // Rubros con POS / caja física
