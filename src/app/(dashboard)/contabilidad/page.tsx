@@ -286,14 +286,212 @@ function LibroMayor() {
   );
 }
 
+/* ── ESTADO DE RESULTADOS ───────────────────────────────── */
+
+type ERFila = { label: string; valor: number; esSub?: boolean; esTotal?: boolean; indent?: boolean; color?: string };
+
+const VENTAS_BRUTAS   = 2_517_000;
+const DESCUENTOS      =    45_000;
+const VENTAS_NETAS    = VENTAS_BRUTAS - DESCUENTOS;
+const CMV             = 1_285_440;
+const RESULTADO_BRUTO = VENTAS_NETAS - CMV;
+
+const GASTOS_COMERCIAL = [
+  { label: "Publicidad y marketing",   valor: 89_400 },
+  { label: "Flete y distribución",     valor: 67_200 },
+  { label: "Comisiones de ventas",     valor: 74_160 },
+];
+const GASTOS_ADMIN = [
+  { label: "Sueldos y cargas sociales", valor: 312_000 },
+  { label: "Alquiler del local",        valor: 180_000 },
+  { label: "Servicios (luz/gas/inet)",  valor:  34_800 },
+  { label: "Honorarios contador",       valor:  45_000 },
+  { label: "Software y herramientas",   valor:  12_400 },
+];
+
+const TOTAL_COMERCIAL = GASTOS_COMERCIAL.reduce((s, g) => s + g.valor, 0);
+const TOTAL_ADMIN     = GASTOS_ADMIN.reduce((s, g) => s + g.valor, 0);
+const RESULTADO_OP    = RESULTADO_BRUTO - TOTAL_COMERCIAL - TOTAL_ADMIN;
+const INTERESES       = 28_300;
+const RESULTADO_ANTES = RESULTADO_OP - INTERESES;
+const IIBB            = Math.round(VENTAS_NETAS * 0.025 * 0.45);
+const RESULTADO_NETO  = RESULTADO_ANTES - IIBB;
+
+function PctBar({ pct, color }: { pct: number; color: string }) {
+  const abs = Math.abs(pct);
+  return (
+    <div className="flex items-center gap-1.5 justify-end">
+      <span className="text-[11px] font-mono w-10 text-right" style={{ color }}>
+        {pct >= 0 ? "" : "-"}{abs.toFixed(1)}%
+      </span>
+      <div className="w-16 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${Math.min(abs, 100)}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function ERRow({ fila, base }: { fila: ERFila; base: number }) {
+  const pct = base > 0 ? (fila.valor / base) * 100 : 0;
+  const color = fila.color ?? (fila.valor >= 0 ? "#F1F5F9" : "#EF4444");
+  return (
+    <tr className={`border-b border-white/[0.03] ${fila.esTotal ? "bg-white/[0.03]" : "hover:bg-white/[0.02]"}`}>
+      <td className={`px-5 py-2.5 ${fila.esTotal ? "font-bold" : fila.esSub ? "font-semibold" : ""} ${fila.indent ? "pl-10" : ""}`}>
+        <span className={`text-[13px] ${fila.esTotal ? "text-[#F1F5F9]" : fila.esSub ? "text-[#E2E8F0]" : "text-[#94A3B8]"}`}>
+          {fila.label}
+        </span>
+      </td>
+      <td className="px-5 py-2.5 text-right">
+        <span className={`text-[13px] font-mono ${fila.esTotal ? "font-bold text-base" : "font-semibold"}`} style={{ color }}>
+          {fila.valor < 0 && !fila.esTotal ? `(${formatARS(Math.abs(fila.valor))})` : formatARS(Math.abs(fila.valor))}
+        </span>
+      </td>
+      <td className="px-5 py-2.5">
+        {fila.esSub || fila.esTotal
+          ? <PctBar pct={fila.valor >= 0 ? pct : -pct} color={color} />
+          : null}
+      </td>
+    </tr>
+  );
+}
+
+function Separator({ label }: { label: string }) {
+  return (
+    <tr>
+      <td colSpan={3} className="px-5 pt-4 pb-1">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#475569]">{label}</p>
+      </td>
+    </tr>
+  );
+}
+
+function EstadoResultados() {
+  const [periodo, setPeriodo] = useState<"mes" | "ytd">("mes");
+
+  const mult = periodo === "ytd" ? 7 : 1;
+
+  const filas: ERFila[] = [
+    { label: "Ventas brutas",                    valor:  VENTAS_BRUTAS * mult },
+    { label: "Descuentos y bonificaciones",       valor: -DESCUENTOS * mult, indent: true },
+    { label: "= Ventas Netas",                    valor:  VENTAS_NETAS * mult, esSub: true, color: "#F1F5F9" },
+    { label: "Costo de mercadería vendida (CMV)", valor: -CMV * mult, indent: true },
+    { label: "= Resultado Bruto",                 valor:  RESULTADO_BRUTO * mult, esSub: true, color: "#10B981" },
+    ...GASTOS_COMERCIAL.map((g) => ({ label: g.label, valor: -g.valor * mult, indent: true })),
+    { label: "= Subtotal comercialización",       valor: -TOTAL_COMERCIAL * mult, esSub: true, color: "#F59E0B" },
+    ...GASTOS_ADMIN.map((g) => ({ label: g.label, valor: -g.valor * mult, indent: true })),
+    { label: "= Subtotal administración",         valor: -TOTAL_ADMIN * mult, esSub: true, color: "#F59E0B" },
+    { label: "= Resultado Operativo (EBIT)",      valor:  RESULTADO_OP * mult, esTotal: true, color: RESULTADO_OP >= 0 ? "#3B82F6" : "#EF4444" },
+    { label: "Intereses y gastos financieros",    valor: -INTERESES * mult, indent: true },
+    { label: "= Resultado antes de impuestos",    valor:  RESULTADO_ANTES * mult, esSub: true, color: "#F1F5F9" },
+    { label: `IIBB (2,5% × Córdoba)`,            valor: -IIBB * mult, indent: true },
+    { label: "= Resultado Neto del Período",      valor:  RESULTADO_NETO * mult, esTotal: true, color: RESULTADO_NETO >= 0 ? "#10B981" : "#EF4444" },
+  ];
+
+  const SEPARATORS: Record<number, string> = {
+    0: "Ingresos",
+    3: "Costo de ventas",
+    5: "Gastos de comercialización",
+    8: "Gastos de administración",
+    13: "Resultado financiero",
+    15: "Impuestos y tasas",
+  };
+
+  const base = VENTAS_NETAS * mult;
+
+  return (
+    <div className="space-y-4">
+      {/* Selector período */}
+      <div className="flex items-center gap-2">
+        {([["mes", "Julio 2026"], ["ytd", "Acumulado Ene–Jul"]] as const).map(([k, lbl]) => (
+          <button key={k} onClick={() => setPeriodo(k)}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+              periodo === k ? "bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30" : "bg-white/[0.04] text-[#475569] hover:text-[#94A3B8]"
+            }`}>
+            {lbl}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5">
+        {/* Tabla */}
+        <div className="bg-[#080E1A] border border-white/[0.06] rounded-xl overflow-hidden">
+          <div className="grid grid-cols-[1fr_140px_120px] border-b border-white/[0.06] bg-white/[0.02]">
+            <p className="px-5 py-2.5 text-[11px] font-medium text-[#475569]">Concepto</p>
+            <p className="px-5 py-2.5 text-[11px] font-medium text-[#475569] text-right">Importe</p>
+            <p className="px-5 py-2.5 text-[11px] font-medium text-[#475569]">% ventas</p>
+          </div>
+          <table className="w-full">
+            <tbody>
+              {filas.map((f, i) => (
+                <>
+                  {SEPARATORS[i] && <Separator key={`sep-${i}`} label={SEPARATORS[i]} />}
+                  <ERRow key={f.label} fila={f} base={base} />
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Panel lateral — resumen visual */}
+        <div className="space-y-3">
+          {[
+            { label: "Ventas Netas",        valor: VENTAS_NETAS * mult,    color: "#F1F5F9",  pct: 100 },
+            { label: "Resultado Bruto",     valor: RESULTADO_BRUTO * mult, color: "#10B981",  pct: Math.round(RESULTADO_BRUTO / VENTAS_NETAS * 100) },
+            { label: "Resultado Operativo", valor: RESULTADO_OP * mult,    color: "#3B82F6",  pct: Math.round(RESULTADO_OP / VENTAS_NETAS * 100) },
+            { label: "Resultado Neto",      valor: RESULTADO_NETO * mult,  color: "#8B5CF6",  pct: Math.round(RESULTADO_NETO / VENTAS_NETAS * 100) },
+          ].map((item) => (
+            <div key={item.label} className="bg-[#080E1A] border border-white/[0.06] rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] text-[#475569]">{item.label}</p>
+                <span className="text-[11px] font-bold font-mono px-1.5 py-0.5 rounded" style={{ color: item.color, background: `${item.color}15` }}>
+                  {item.pct}%
+                </span>
+              </div>
+              <p className="text-base font-black font-mono" style={{ color: item.color }}>
+                {formatARS(item.valor)}
+              </p>
+              <div className="mt-2 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all" style={{ width: `${item.pct}%`, background: item.color }} />
+              </div>
+            </div>
+          ))}
+
+          {/* Cascada simplificada */}
+          <div className="bg-[#080E1A] border border-white/[0.06] rounded-xl p-4">
+            <p className="text-[10px] font-bold text-[#475569] uppercase tracking-widest mb-3">Cascada de márgenes</p>
+            {[
+              { label: "−CMV",           pct: Math.round(CMV / VENTAS_NETAS * 100),           color: "#EF4444" },
+              { label: "−Comercial",     pct: Math.round(TOTAL_COMERCIAL / VENTAS_NETAS * 100),color: "#F59E0B" },
+              { label: "−Administración",pct: Math.round(TOTAL_ADMIN / VENTAS_NETAS * 100),    color: "#F97316" },
+              { label: "−Financiero",    pct: Math.round((INTERESES + IIBB) / VENTAS_NETAS * 100), color: "#6366F1" },
+              { label: "= Neto",         pct: Math.round(RESULTADO_NETO / VENTAS_NETAS * 100), color: "#8B5CF6" },
+            ].map((r) => (
+              <div key={r.label} className="flex items-center gap-2 mb-1.5">
+                <p className="text-[11px] text-[#475569] w-28 shrink-0">{r.label}</p>
+                <div className="flex-1 h-4 bg-white/[0.04] rounded overflow-hidden">
+                  <div className="h-full rounded flex items-center justify-end pr-1.5"
+                    style={{ width: `${Math.min(r.pct, 100)}%`, background: `${r.color}40` }}>
+                    <span className="text-[9px] font-mono font-bold" style={{ color: r.color }}>{r.pct}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── PAGE ────────────────────────────────────────────────── */
 
 export default function ContabilidadPage() {
-  const [tab, setTab] = useState<"balance" | "mayor">("balance");
+  const [tab, setTab] = useState<"balance" | "mayor" | "resultados">("balance");
 
   const tabs = [
-    { key: "balance", label: "Balance General" },
-    { key: "mayor",   label: "Libro Mayor" },
+    { key: "balance",    label: "Balance General" },
+    { key: "mayor",      label: "Libro Mayor" },
+    { key: "resultados", label: "Estado de Resultados" },
   ] as const;
 
   return (
@@ -367,8 +565,9 @@ export default function ContabilidadPage() {
           ))}
         </div>
         <div className="p-5">
-          {tab === "balance" && <BalanceGeneral />}
-          {tab === "mayor"   && <LibroMayor />}
+          {tab === "balance"    && <BalanceGeneral />}
+          {tab === "mayor"      && <LibroMayor />}
+          {tab === "resultados" && <EstadoResultados />}
         </div>
       </div>
     </div>
