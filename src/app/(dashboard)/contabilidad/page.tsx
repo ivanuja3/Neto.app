@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Fragment } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getPnlMonthly, getAnalyticLines, getExpenses } from "@/lib/db/analytics";
 import { getOrders } from "@/lib/db/orders";
@@ -66,7 +66,7 @@ function BalanceGeneral({ data, loading }: { data: AppData | null; loading: bool
     { label: "Bienes de uso",                   value: 0, vacio: true, sub: "Sin activos fijos registrados" },
   ];
   const pasivoCorriente: BalItem[] = [
-    { label: "Proveedores",                     value: proveedPend,   sub: `${(data?.purchases ?? []).filter((p) => p.state === "pending").length} compras pendientes de pago` },
+    { label: "Proveedores",                     value: proveedPend,   sub: `${(data?.purchases ?? []).filter((p) => p.state !== "received" && p.state !== "invoiced" && p.state !== "cancelled").length} compras pendientes de pago` },
   ];
 
   if (loading) return (
@@ -180,7 +180,7 @@ function LibroMayor({ data, loading }: { data: AppData | null; loading: boolean 
         fecha:    p.date,
         concepto: p.partner?.name ? `Compra — ${p.partner.name}` : "Compra",
         debe:  (p.state === "received" || p.state === "invoiced") ? Number(p.amount_total) : 0,
-        haber: (p.state !== "received" && p.state !== "invoiced") ? Number(p.amount_total) : 0,
+        haber: (p.state !== "received" && p.state !== "invoiced" && p.state !== "cancelled") ? Number(p.amount_total) : 0,
       })),
     };
     const movGenerales: MayorCuenta = {
@@ -386,14 +386,13 @@ function EstadoResultados({ data, loading }: { data: AppData | null; loading: bo
               {filas.map((f, i) => {
                 const color = f.color ?? (f.valor >= 0 ? "#F1F5F9" : "#94A3B8");
                 const p = pct(f.valor);
-                // Insert section headers
                 const headers: Record<number, string> = { 2: "Costo de ventas", 4: "Gastos operativos", 7: "Gastos fijos" };
                 return (
-                  <>
+                  <Fragment key={i}>
                     {headers[i] && (
-                      <tr key={`h${i}`}><td colSpan={3} className="px-5 pt-4 pb-1"><p className="text-[10px] font-bold text-[#475569] uppercase tracking-widest">{headers[i]}</p></td></tr>
+                      <tr><td colSpan={3} className="px-5 pt-4 pb-1"><p className="text-[10px] font-bold text-[#475569] uppercase tracking-widest">{headers[i]}</p></td></tr>
                     )}
-                    <tr key={i} className={`border-b border-white/[0.03] ${f.isTotal ? "bg-white/[0.03]" : "hover:bg-white/[0.02]"}`}>
+                    <tr className={`border-b border-white/[0.03] ${f.isTotal ? "bg-white/[0.03]" : "hover:bg-white/[0.02]"}`}>
                       <td className={`px-5 py-2.5 ${f.isTotal ? "font-bold" : f.isSub ? "font-semibold" : ""} ${f.indent ? "pl-10" : ""}`}>
                         <span className={`text-[13px] ${f.isTotal ? "text-[#F1F5F9]" : f.isSub ? "text-[#E2E8F0]" : "text-[#94A3B8]"}`}>{f.label}</span>
                       </td>
@@ -406,7 +405,7 @@ function EstadoResultados({ data, loading }: { data: AppData | null; loading: bo
                         {(f.isSub || f.isTotal) && <PctBar pct={Math.abs(p)} color={color} />}
                       </td>
                     </tr>
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -469,23 +468,28 @@ export default function ContabilidadPage() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [pnlRes, expRes, ordRes, purRes, lineRes, invVal] = await Promise.all([
-        getPnlMonthly(user!.id, 12),
-        getExpenses(user!.id),
-        getOrders(user!.id, { limit: 50 }),
-        getPurchases(user!.id, { months: 12 }),
-        getAnalyticLines(user!.id),
-        getInventoryValue(user!.id),
-      ]);
-      setData({
-        pnl:            (pnlRes.data ?? []).map((r: PnlRow) => ({ ...r, ingresos: Number(r.ingresos), cogs: Number(r.cogs), cm1: Number(r.cm1), cm1_pct: Number(r.cm1_pct), marketing: Number(r.marketing), logistica: Number(r.logistica), cm2: Number(r.cm2), cm2_pct: Number(r.cm2_pct), gastos_fijos: Number(r.gastos_fijos), cm3: Number(r.cm3), cm3_pct: Number(r.cm3_pct) })),
-        expenses:       (expRes.data ?? []) as Expense[],
-        orders:         ((ordRes as { data: Order[] | null }).data ?? []),
-        purchases:      (purRes.data ?? []) as Purchase[],
-        lines:          (lineRes.data ?? []) as Line[],
-        inventoryValue: invVal,
-      });
-      setLoading(false);
+      try {
+        const [pnlRes, expRes, ordRes, purRes, lineRes, invVal] = await Promise.all([
+          getPnlMonthly(user!.id, 12),
+          getExpenses(user!.id),
+          getOrders(user!.id, { limit: 50 }),
+          getPurchases(user!.id, { months: 12 }),
+          getAnalyticLines(user!.id),
+          getInventoryValue(user!.id),
+        ]);
+        setData({
+          pnl:            (pnlRes.data ?? []).map((r: PnlRow) => ({ ...r, ingresos: Number(r.ingresos), cogs: Number(r.cogs), cm1: Number(r.cm1), cm1_pct: Number(r.cm1_pct), marketing: Number(r.marketing), logistica: Number(r.logistica), cm2: Number(r.cm2), cm2_pct: Number(r.cm2_pct), gastos_fijos: Number(r.gastos_fijos), cm3: Number(r.cm3), cm3_pct: Number(r.cm3_pct) })),
+          expenses:       (expRes.data ?? []) as Expense[],
+          orders:         ((ordRes as { data: Order[] | null }).data ?? []),
+          purchases:      (purRes.data ?? []) as Purchase[],
+          lines:          (lineRes.data ?? []) as Line[],
+          inventoryValue: invVal,
+        });
+      } catch (err) {
+        console.error("Contabilidad load error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [user]);

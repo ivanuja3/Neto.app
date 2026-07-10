@@ -308,8 +308,8 @@ function MetaMes({
 
   async function save() {
     const raw = input.replace(/\./g, "").replace(",", ".");
-    const val = raw ? Number(raw) : null;
-    if (val !== null && (isNaN(val) || val < 0)) return;
+    const parsed = raw ? Number(raw) : 0;
+    const val = !isNaN(parsed) && parsed > 0 ? parsed : null;
     setSaving(true);
     setSaveErr(null);
     try {
