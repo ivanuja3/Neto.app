@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -64,14 +63,39 @@ const NAV_SECTIONS = [
   },
 ];
 
+/* ─── Neto mark (inline SVG — no image dependency) ─── */
+function NetoMark({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+      <defs>
+        <linearGradient id="netoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#10B981" />
+          <stop offset="1" stopColor="#059669" />
+        </linearGradient>
+        <linearGradient id="netoGradInner" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#34D399" stopOpacity="0.15" />
+          <stop offset="1" stopColor="#059669" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="8" fill="url(#netoGrad)" />
+      <rect width="32" height="32" rx="8" fill="url(#netoGradInner)" />
+      {/* N mark — left vert + diagonal + right vert */}
+      <path d="M10 23V9L22 23V9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /* ─── Logo ─── */
 function Logo() {
   return (
-    <div className="flex items-center gap-3">
-      <Image src="/logo.png" alt="Neto" width={28} height={28} className="rounded-lg shrink-0" />
-      <span className="font-bold text-[#F1F5F9] tracking-tight">
-        Neto<span className="text-[#10B981]">.app</span>
-      </span>
+    <div className="flex items-center gap-2.5">
+      <NetoMark size={32} />
+      <div className="flex flex-col leading-none gap-[3px]">
+        <span className="font-black text-[14.5px] text-[#F1F5F9] tracking-[0.02em]">
+          NETO<span className="text-[#10B981]">.</span>
+        </span>
+        <span className="text-[9.5px] font-medium text-[#334155] tracking-[0.18em] uppercase">Dashboard</span>
+      </div>
     </div>
   );
 }
@@ -154,7 +178,7 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <div className="mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+      <div className="mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-[#10B981]/[0.18] to-transparent" />
 
       <div className="px-2.5 py-3 space-y-0.5 shrink-0">
         <Link
@@ -248,16 +272,19 @@ export function Sidebar() {
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+        <div className="mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-[#10B981]/[0.18] to-transparent" />
         <NavItems onNavigate={() => setMobileOpen(false)} />
       </div>
 
       {/* ════ DESKTOP ONLY ════ */}
-      <aside className="hidden lg:flex lg:flex-col w-[220px] shrink-0 h-screen sticky top-0 border-r border-white/[0.05] bg-[#060D19]">
-        <div className="flex items-center gap-3 px-5 h-[60px] shrink-0">
+      <aside
+        className="hidden lg:flex lg:flex-col w-[220px] shrink-0 h-screen sticky top-0 border-r border-white/[0.05] bg-[#060D19]"
+        style={{ borderTop: "2px solid #10B981" }}
+      >
+        <div className="flex items-center gap-3 px-4 h-[60px] shrink-0">
           <Logo />
         </div>
-        <div className="mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+        <div className="mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-[#10B981]/[0.18] to-transparent" />
         <NavItems />
       </aside>
     </>

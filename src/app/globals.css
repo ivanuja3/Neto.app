@@ -151,3 +151,27 @@ select:focus,
 textarea:focus {
   outline: none;
 }
+
+/* ── Neto brand — card signature ── */
+/* Top border verde en todas las cards bg-[#0C1424] rounded-xl de la app */
+.bg-\[#0C1424\].rounded-xl {
+  border-top: 2px solid rgba(16, 185, 129, 0.30);
+}
+
+/* ── Neto brand — page header mark ── */
+/* Línea de acento izquierdo en todos los h1 dentro del main del dashboard */
+main h1 {
+  position: relative;
+  padding-left: 12px;
+}
+main h1::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 75%;
+  background: linear-gradient(to bottom, #10B981, #059669);
+  border-radius: 2px;
+}

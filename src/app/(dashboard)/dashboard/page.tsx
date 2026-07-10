@@ -135,7 +135,7 @@ function KpiCard({
         {/* Cara frontal */}
         <div
           className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-4"
-          style={{ backfaceVisibility: "hidden" }}
+          style={{ backfaceVisibility: "hidden", borderTop: "2px solid rgba(16,185,129,0.35)" }}
         >
           <div className="flex items-start justify-between">
             <span className="text-sm text-[#94A3B8]">{label}</span>
