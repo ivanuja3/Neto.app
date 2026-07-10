@@ -31,6 +31,18 @@ export async function updateCompany(userId: string, updates: TablesUpdate<"compa
     .eq("user_id", userId)
     .select()
     .single();
+  if (error?.code === "PGRST116") {
+    // No company row yet — create it with defaults then apply updates
+    await ensureCompany(userId, null);
+    const { data: retryData, error: retryErr } = await db
+      .from("companies")
+      .update(updates)
+      .eq("user_id", userId)
+      .select()
+      .single();
+    if (retryErr) throw retryErr;
+    return retryData as Company;
+  }
   if (error) throw error;
   return data as Company;
 }

@@ -471,7 +471,7 @@ export default function ContabilidadPage() {
         const [pnlRes, expRes, ordRes, purRes, lineRes, invVal] = await Promise.all([
           getPnlMonthly(user!.id, 12),
           getExpenses(user!.id),
-          getOrders(user!.id, { limit: 50 }),
+          getOrders(user!.id, { limit: 500 }),
           getPurchases(user!.id, { months: 12 }),
           getAnalyticLines(user!.id),
           getInventoryValue(user!.id),

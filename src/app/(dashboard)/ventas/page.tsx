@@ -470,6 +470,7 @@ export default function VentasPage() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     async function load() {
       try {
         const [chanRes, topRes, pnlRes] = await Promise.all([
@@ -477,16 +478,18 @@ export default function VentasPage() {
           getTopProducts(user!.id, 10),
           getPnlMonthly(user!.id, 6),
         ]);
+        if (cancelled) return;
         setChannels(chanRes.data ?? []);
         setTopProds(topRes.data  ?? []);
         setPnlData(pnlRes.data   ?? []);
       } catch (err) {
         console.error("VentasPage load error:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     load();
+    return () => { cancelled = true; };
   }, [user, refreshKey]);
 
   const totalChan   = channels.reduce((s, r) => s + Number(r.ingresos), 0);
