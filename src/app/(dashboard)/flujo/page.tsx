@@ -116,8 +116,8 @@ export default function FlujoPage() {
   const { totalIngresos, totalEgresos, countIngresos, countEgresos } = useMemo(() => {
     let tIn = 0, tEg = 0, cIn = 0, cEg = 0;
     for (const m of movimientos) {
-      if (m.amount > 0) { tIn += m.amount; cIn++; }
-      else              { tEg += Math.abs(m.amount); cEg++; }
+      if      (m.amount > 0) { tIn += m.amount; cIn++; }
+      else if (m.amount < 0) { tEg += Math.abs(m.amount); cEg++; }
     }
     return { totalIngresos: tIn, totalEgresos: tEg, countIngresos: cIn, countEgresos: cEg };
   }, [movimientos]);
