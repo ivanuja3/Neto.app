@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getPnlMonthly, getAnalyticLines } from "@/lib/db/analytics";
 import { TrendingUp, TrendingDown, ArrowDown, ArrowUp, AlertTriangle, Wallet, Lock } from "lucide-react";
@@ -112,8 +112,18 @@ export default function FlujoPage() {
 
   const mesNegativo = pnl.find((r) => r.cm3 < 0);
 
+  /* ── Totales y conteos (un único pass sobre movimientos) ── */
+  const { totalIngresos, totalEgresos, countIngresos, countEgresos } = useMemo(() => {
+    let tIn = 0, tEg = 0, cIn = 0, cEg = 0;
+    for (const m of movimientos) {
+      if (m.amount > 0) { tIn += m.amount; cIn++; }
+      else              { tEg += Math.abs(m.amount); cEg++; }
+    }
+    return { totalIngresos: tIn, totalEgresos: tEg, countIngresos: cIn, countEgresos: cEg };
+  }, [movimientos]);
+
   /* ── Filtrado sub-tabs + search ── */
-  const movsFiltrados = movimientos.filter((m) => {
+  const movsFiltrados = useMemo(() => movimientos.filter((m) => {
     const matchSub =
       subTab === "todos"      ? true :
       subTab === "ingresos"   ? m.amount > 0 :
@@ -121,11 +131,8 @@ export default function FlujoPage() {
       false;
     const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
     return matchSub && matchSearch;
-  });
+  }), [movimientos, subTab, search]);
   const movsShown = movsFiltrados.slice(0, 200);
-
-  const totalIngresos  = movimientos.filter((m) => m.amount > 0).reduce((s, m) => s + m.amount, 0);
-  const totalEgresos   = movimientos.filter((m) => m.amount < 0).reduce((s, m) => s + Math.abs(m.amount), 0);
 
   return (
     <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
@@ -283,8 +290,8 @@ export default function FlujoPage() {
               <div className="flex items-center gap-1">
                 {([
                   { key: "todos",      label: `Todos (${movimientos.length})` },
-                  { key: "ingresos",   label: `Ingresos (${movimientos.filter((m) => m.amount > 0).length})` },
-                  { key: "egresos",    label: `Egresos (${movimientos.filter((m) => m.amount < 0).length})` },
+                  { key: "ingresos",   label: `Ingresos (${countIngresos})` },
+                  { key: "egresos",    label: `Egresos (${countEgresos})` },
                   { key: "por_cobrar", label: "Por cobrar" },
                   { key: "por_pagar",  label: "Por pagar" },
                 ] as const).map((t) => (
