@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getPnlMonthly } from "@/lib/db/analytics";
 import { getSalesByChannel, getTopProducts, createOrder, getOrders } from "@/lib/db/orders";
@@ -411,19 +411,27 @@ export default function VentasPage() {
   const [orders,       setOrders]       = useState<Order[]>([]);
   const [histLoading,  setHistLoading]  = useState(false);
 
+  const histReqRef = useRef(0);
   const loadHistorial = useCallback(async () => {
     if (!user) return;
     setHistLoading(true);
+    const myReq = ++histReqRef.current;
     const { from, to } = periodo === "rango" && rangoFrom && rangoTo
       ? { from: rangoFrom, to: rangoTo }
       : periodDates(periodo);
-    const res = await getOrders(user.id, {
-      dateFrom: from,
-      dateTo: to,
-      paymentMethod: metodoPago || undefined,
-    });
-    setOrders(res.data ?? []);
-    setHistLoading(false);
+    try {
+      const res = await getOrders(user.id, {
+        dateFrom: from,
+        dateTo: to,
+        paymentMethod: metodoPago || undefined,
+      });
+      if (histReqRef.current !== myReq) return;
+      setOrders(res.data ?? []);
+    } catch (err) {
+      console.error("Ventas historial load error:", err);
+    } finally {
+      if (histReqRef.current === myReq) setHistLoading(false);
+    }
   }, [user, periodo, metodoPago, rangoFrom, rangoTo, refreshKey]);
 
   useEffect(() => {

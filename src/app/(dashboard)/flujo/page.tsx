@@ -88,7 +88,7 @@ export default function FlujoPage() {
         setMovimientos(
           (lineRes.data ?? [])
             .map((l: AnalyticLine) => ({ ...l, amount: Number(l.amount) }))
-            .slice(0, 50)
+            .slice(0, 200)
         );
       } catch (err) {
         console.error("FlujoPage load error:", err);

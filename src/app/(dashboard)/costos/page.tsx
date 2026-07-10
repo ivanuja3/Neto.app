@@ -194,31 +194,37 @@ export default function CostosPage() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     async function load() {
-      const [expRes, kpiRes, companyRes] = await Promise.all([
-        getExpenses(user!.id),
-        getKpisCurrentMonth(user!.id),
-        getCompany(user!.id),
-      ]);
-
-      const items: CostoItem[] = (expRes.data ?? []).map((e: {
-        id: string; name: string; type: string; category: string | null;
-        amount: number; frequency: string;
-      }) => ({
-        id:          e.id,
-        nombre:      e.name,
-        categoria:   (e.type === "fixed" ? "fijo" : "variable") as "fijo" | "variable",
-        tipo:        e.category ?? "General",
-        valor:       toMonthly(e.amount, e.frequency),
-        periodicidad: e.frequency,
-      }));
-
-      setCostos(items);
-      setIngresosMes(Number(kpiRes.data?.[0]?.ingresos ?? 0));
-      setIndustry(companyRes?.industry ?? null);
-      setLoading(false);
+      try {
+        const [expRes, kpiRes, companyRes] = await Promise.all([
+          getExpenses(user!.id),
+          getKpisCurrentMonth(user!.id),
+          getCompany(user!.id),
+        ]);
+        if (cancelled) return;
+        const items: CostoItem[] = (expRes.data ?? []).map((e: {
+          id: string; name: string; type: string; category: string | null;
+          amount: number; frequency: string;
+        }) => ({
+          id:          e.id,
+          nombre:      e.name,
+          categoria:   (e.type === "fixed" ? "fijo" : "variable") as "fijo" | "variable",
+          tipo:        e.category ?? "General",
+          valor:       toMonthly(e.amount, e.frequency),
+          periodicidad: e.frequency,
+        }));
+        setCostos(items);
+        setIngresosMes(Number(kpiRes.data?.[0]?.ingresos ?? 0));
+        setIndustry(companyRes?.industry ?? null);
+      } catch (err) {
+        console.error("CostosPage load error:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     load();
+    return () => { cancelled = true; };
   }, [user, refreshKey]);
 
   const fijos     = costos.filter((c) => c.categoria === "fijo");
@@ -230,7 +236,8 @@ export default function CostosPage() {
   const totalCostos    = totalFijos + totalVariables;
 
   const margenCubiertos  = ingresosMes > 0 ? ((ingresosMes - totalCostos) / ingresosMes) * 100 : 0;
-  const ventasNecesarias = totalVariables < ingresosMes && totalFijos > 0
+  const cmNegativo       = ingresosMes > 0 && totalVariables >= ingresosMes;
+  const ventasNecesarias = !cmNegativo && totalVariables < ingresosMes && totalFijos > 0
     ? totalFijos / (1 - totalVariables / Math.max(ingresosMes, 1))
     : 0;
 
@@ -280,7 +287,18 @@ export default function CostosPage() {
       </div>
 
       {/* Alerta punto de equilibrio */}
-      {!loading && ingresosMes > 0 && ingresosMes < ventasNecesarias && (
+      {!loading && cmNegativo && (
+        <div className="flex items-start gap-3 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-xl px-5 py-4">
+          <AlertCircle className="w-4 h-4 text-[#EF4444] shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-[#EF4444]">Margen de contribución negativo</p>
+            <p className="text-xs text-[#94A3B8] mt-0.5">
+              Tus costos variables ({formatARS(totalVariables)}) superan los ingresos ({formatARS(ingresosMes)}). Cada venta adicional genera más pérdida — revisá tu estructura de costos variables.
+            </p>
+          </div>
+        </div>
+      )}
+      {!loading && !cmNegativo && ingresosMes > 0 && ingresosMes < ventasNecesarias && (
         <div className="flex items-start gap-3 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-xl px-5 py-4">
           <AlertCircle className="w-4 h-4 text-[#EF4444] shrink-0 mt-0.5" />
           <div>
