@@ -122,6 +122,7 @@ export default function FlujoPage() {
     const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
     return matchSub && matchSearch;
   });
+  const movsShown = movsFiltrados.slice(0, 200);
 
   const totalIngresos  = movimientos.filter((m) => m.amount > 0).reduce((s, m) => s + m.amount, 0);
   const totalEgresos   = movimientos.filter((m) => m.amount < 0).reduce((s, m) => s + Math.abs(m.amount), 0);
@@ -332,7 +333,7 @@ export default function FlujoPage() {
               <div className="px-5 py-8 text-center text-sm text-[#475569]">Sin movimientos</div>
             ) : (
               <div className="divide-y divide-white/[0.04]">
-                {movsFiltrados.map((m) => {
+                {movsShown.map((m) => {
                   const isEntrada = m.amount > 0;
                   return (
                     <div key={m.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
@@ -359,7 +360,11 @@ export default function FlujoPage() {
 
             {!loading && movsFiltrados.length > 0 && subTab !== "por_cobrar" && subTab !== "por_pagar" && (
               <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/[0.06] bg-white/[0.02]">
-                <span className="text-sm text-[#94A3B8]">{movsFiltrados.length} movimientos</span>
+                <span className="text-sm text-[#94A3B8]">
+                  {movsFiltrados.length > 200
+                    ? `Mostrando 200 de ${movsFiltrados.length} movimientos`
+                    : `${movsFiltrados.length} movimientos`}
+                </span>
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-[#10B981] font-mono">+{formatARS(totalIngresos)}</span>
                   <span className="text-xs text-[#EF4444] font-mono">−{formatARS(totalEgresos)}</span>
