@@ -300,19 +300,25 @@ function MetaMes({
   const [editing, setEditing]   = useState(false);
   const [input,   setInput]     = useState("");
   const [saving,  setSaving]    = useState(false);
+  const [saveErr, setSaveErr]   = useState<string | null>(null);
 
   const pct    = goal && goal > 0 ? Math.min(Math.round((ingresos / goal) * 100), 100) : 0;
   const falta  = goal ? Math.max(goal - ingresos, 0) : 0;
   const barColor = pct >= 100 ? "#10B981" : pct >= 60 ? "#F59E0B" : "#3B82F6";
 
   async function save() {
-    const val = Number(input.replace(/\./g, "").replace(",", ".")) || null;
+    const raw = input.replace(/\./g, "").replace(",", ".");
+    const val = raw ? Number(raw) : null;
+    if (val !== null && (isNaN(val) || val < 0)) return;
     setSaving(true);
+    setSaveErr(null);
     try {
       const { updateCompany } = await import("@/lib/db/companies");
       await updateCompany(userId, { monthly_goal: val });
       onSaved(val);
       setEditing(false);
+    } catch (err) {
+      setSaveErr(err instanceof Error ? err.message : "Error al guardar");
     } finally {
       setSaving(false);
     }
@@ -380,25 +386,28 @@ function MetaMes({
 
         {/* Input edición */}
         {editing && (
-          <div className="flex gap-2 mt-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && save()}
-              placeholder="Ej: 500000"
-              autoFocus
-              className="flex-1 bg-[#080E1A] border border-white/[0.10] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#F59E0B]/50 transition-colors"
-            />
-            <button onClick={save} disabled={saving}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-[#080E1A] disabled:opacity-60 transition-colors"
-              style={{ background: "#F59E0B" }}>
-              {saving ? "..." : "Guardar"}
-            </button>
-            <button onClick={() => setEditing(false)}
-              className="px-3 py-2 rounded-lg text-sm text-[#475569] hover:text-[#94A3B8] border border-white/[0.06] transition-colors">
-              Cancelar
-            </button>
+          <div className="mt-3 space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => { setInput(e.target.value); setSaveErr(null); }}
+                onKeyDown={(e) => e.key === "Enter" && save()}
+                placeholder="Ej: 500000"
+                autoFocus
+                className="flex-1 bg-[#080E1A] border border-white/[0.10] text-[#F1F5F9] placeholder-[#475569] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#F59E0B]/50 transition-colors"
+              />
+              <button onClick={save} disabled={saving}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-[#080E1A] disabled:opacity-60 transition-colors"
+                style={{ background: "#F59E0B" }}>
+                {saving ? "..." : "Guardar"}
+              </button>
+              <button onClick={() => { setEditing(false); setSaveErr(null); }}
+                className="px-3 py-2 rounded-lg text-sm text-[#475569] hover:text-[#94A3B8] border border-white/[0.06] transition-colors">
+                Cancelar
+              </button>
+            </div>
+            {saveErr && <p className="text-[11px] text-[#EF4444]">{saveErr}</p>}
           </div>
         )}
       </div>

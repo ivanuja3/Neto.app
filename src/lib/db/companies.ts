@@ -27,7 +27,8 @@ export async function createCompany(company: TablesInsert<"companies">) {
 export async function updateCompany(userId: string, updates: TablesUpdate<"companies">) {
   const { data, error } = await db
     .from("companies")
-    .upsert({ user_id: userId, ...updates }, { onConflict: "user_id" })
+    .update(updates)
+    .eq("user_id", userId)
     .select()
     .single();
   if (error) throw error;
