@@ -107,12 +107,14 @@ export default function ProyeccionesPage() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     async function load() {
       try {
         const [kpiRes, pnlRes] = await Promise.all([
           getKpisCurrentMonth(user!.id),
           getPnlMonthly(user!.id, 6),
         ]);
+        if (cancelled) return;
         const kpi = kpiRes.data?.[0];
         setUltimoIngreso(Number(kpi?.ingresos  ?? 0));
         setCm3Actual(    Number(kpi?.cm3_pct   ?? 0));
@@ -125,10 +127,11 @@ export default function ProyeccionesPage() {
       } catch (err) {
         console.error("ProyeccionesPage load error:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     load();
+    return () => { cancelled = true; };
   }, [user]);
 
   const cfg        = ESCENARIOS_CONFIG[escenario];
@@ -149,7 +152,7 @@ export default function ProyeccionesPage() {
 
   /* Calculadora de meta */
   const metaMonto      = parseFloat(metaStr.replace(/[^0-9]/g, "")) || 0;
-  const mesesParaMeta  = metaMonto > ultimoIngreso && cfg.tasa > 0
+  const mesesParaMeta  = metaMonto > ultimoIngreso && ultimoIngreso > 0 && cfg.tasa > 0
     ? Math.ceil(Math.log(metaMonto / ultimoIngreso) / Math.log(1 + cfg.tasa))
     : 0;
   const pctNecesario   = metaMonto > ultimoIngreso
@@ -468,7 +471,7 @@ export default function ProyeccionesPage() {
           <div className="flex items-start gap-2.5 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-xl px-3.5 py-3 mt-4">
             <AlertCircle className="w-3.5 h-3.5 text-[#EF4444] mt-0.5 shrink-0" />
             <p className="text-xs text-[#EF4444]">
-              En 12 cuotas perdés el{" "}
+              En {cuotas} cuotas perdés el{" "}
               <strong>{((perdidasInflacion / precioHoy) * 100).toFixed(0)}% del valor real</strong>.
               Aplicá un ajuste por inflación o pasá a precios con actualización automática.
             </p>

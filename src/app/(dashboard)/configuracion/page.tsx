@@ -171,7 +171,9 @@ function ConfiguracionPageInner() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     getCompany(user.id).then((c) => {
+      if (cancelled) return;
       if (c) {
         setName(c.name ?? "");
         setCuit(c.cuit ?? "");
@@ -184,9 +186,10 @@ function ConfiguracionPageInner() {
       }
       setLoadingCompany(false);
     }).catch(() => {
-      setLoadingCompany(false);
+      if (!cancelled) setLoadingCompany(false);
     });
     loadIntegrations();
+    return () => { cancelled = true; };
   }, [user, loadIntegrations]);
 
   // Manejar redirect de OAuth
@@ -247,8 +250,7 @@ function ConfiguracionPageInner() {
       return;
     }
 
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    // otros tabs no tienen persistencia todavía — no mostrar "Guardado"
   }
 
   async function handleSignOut() {

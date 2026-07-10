@@ -63,12 +63,14 @@ export default function MargenesPage() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     async function load() {
       try {
         const [pnlRes, prodRes] = await Promise.all([
           getPnlMonthly(user!.id, 6),
           getTopProducts(user!.id, 20),
         ]);
+        if (cancelled) return;
         setPnl((pnlRes.data ?? []).map((r: PnlRow) => ({
           ...r,
           ingresos:     Number(r.ingresos),
@@ -90,10 +92,11 @@ export default function MargenesPage() {
       } catch (err) {
         console.error("MargenesPage load error:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     load();
+    return () => { cancelled = true; };
   }, [user]);
 
   /* ── Mes actual (último row del P&L) ── */
