@@ -7,10 +7,8 @@ import { getOrders } from "@/lib/db/orders";
 import { getPurchases } from "@/lib/db/purchases";
 import { getInventoryValue } from "@/lib/db/products";
 import { BookOpen, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { formatARS } from "@/lib/mock-data";
 
-function formatARS(v: number) {
-  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(v);
-}
 function mesLabel(m: string) {
   const [y, mo] = m.split("-");
   const d = new Date(Number(y), Number(mo) - 1);
@@ -467,6 +465,7 @@ export default function ContabilidadPage() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     async function load() {
       try {
         const [pnlRes, expRes, ordRes, purRes, lineRes, invVal] = await Promise.all([
@@ -477,6 +476,7 @@ export default function ContabilidadPage() {
           getAnalyticLines(user!.id),
           getInventoryValue(user!.id),
         ]);
+        if (cancelled) return;
         setData({
           pnl:            (pnlRes.data ?? []).map((r: PnlRow) => ({ ...r, ingresos: Number(r.ingresos), cogs: Number(r.cogs), cm1: Number(r.cm1), cm1_pct: Number(r.cm1_pct), marketing: Number(r.marketing), logistica: Number(r.logistica), cm2: Number(r.cm2), cm2_pct: Number(r.cm2_pct), gastos_fijos: Number(r.gastos_fijos), cm3: Number(r.cm3), cm3_pct: Number(r.cm3_pct) })),
           expenses:       (expRes.data ?? []) as Expense[],
@@ -488,10 +488,11 @@ export default function ContabilidadPage() {
       } catch (err) {
         console.error("Contabilidad load error:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     load();
+    return () => { cancelled = true; };
   }, [user]);
 
   const pnl  = data?.pnl ?? [];

@@ -128,18 +128,26 @@ export default function ImpuestosPage() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     async function load() {
-      const [kpiRes, lineRes, ordRes] = await Promise.all([
-        getKpisCurrentMonth(user!.id),
-        getAnalyticLines(user!.id, { category: "impuesto" }),
-        getOrders(user!.id, { limit: 20 }),
-      ]);
-      setIngresosMes(Number(kpiRes.data?.[0]?.ingresos ?? 0));
-      setPagosLineas((lineRes.data ?? []).map((l: AnalyticLine) => ({ ...l, amount: Number(l.amount) })));
-      setOrders((ordRes as { data: Order[] | null }).data ?? []);
-      setLoading(false);
+      try {
+        const [kpiRes, lineRes, ordRes] = await Promise.all([
+          getKpisCurrentMonth(user!.id),
+          getAnalyticLines(user!.id, { category: "impuesto" }),
+          getOrders(user!.id, { limit: 20 }),
+        ]);
+        if (cancelled) return;
+        setIngresosMes(Number(kpiRes.data?.[0]?.ingresos ?? 0));
+        setPagosLineas((lineRes.data ?? []).map((l: AnalyticLine) => ({ ...l, amount: Number(l.amount) })));
+        setOrders((ordRes as { data: Order[] | null }).data ?? []);
+      } catch (err) {
+        console.error("Impuestos load error:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     load();
+    return () => { cancelled = true; };
   }, [user]);
 
   const obligaciones = buildObligaciones(ingresosMes);
@@ -148,7 +156,7 @@ export default function ImpuestosPage() {
   const totalVencido  = obligaciones.filter((o) => o.estado === "vencido").reduce((s, o) => s + o.monto, 0);
   const cargaPct      = ingresosMes > 0 ? ((totalPagado + totalPendiente) / ingresosMes * 100).toFixed(1) : "—";
 
-  const iibbTotal = coeficientesCM.reduce((s, j) => s + ingresosMes * j.coef_ing * (j.alicuota / 100), 0);
+  const iibbTotal = coeficientesCM.reduce((s, j) => s + ingresosMes * ((j.coef_ing + j.coef_gas) / 2) * (j.alicuota / 100), 0);
 
   return (
     <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
@@ -293,7 +301,7 @@ export default function ImpuestosPage() {
                   </thead>
                   <tbody>
                     {coeficientesCM.map((j, i) => {
-                      const base = ingresosMes * j.coef_ing;
+                      const base = ingresosMes * ((j.coef_ing + j.coef_gas) / 2);
                       const iibb = base * (j.alicuota / 100);
                       return (
                         <tr key={i} className="border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02]">
@@ -383,7 +391,7 @@ export default function ImpuestosPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setBulkInvoice(true)}
+                    onClick={() => { setSelectedIds(new Set()); setBulkInvoice(true); }}
                     className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-[#F1F5F9] bg-[#3B82F6] hover:bg-[#2563EB] px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <FileText className="w-3.5 h-3.5" />
