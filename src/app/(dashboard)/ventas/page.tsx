@@ -697,7 +697,6 @@ export default function VentasPage() {
       <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.10] transition-colors">
         <div className="mb-5">
           <h2 className="text-sm font-semibold text-[#F1F5F9]">Evolución de ingresos</h2>
-          <p className="text-xs text-[#475569] mt-0.5">Últimos 6 meses</p>
         </div>
         {loading ? (
           <div className="h-[240px] bg-white/[0.03] rounded-lg animate-pulse" />
@@ -726,7 +725,6 @@ export default function VentasPage() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05]">
           <div>
             <h2 className="text-sm font-semibold text-[#F1F5F9]">Top productos por ingreso</h2>
-            <p className="text-xs text-[#475569] mt-0.5">Ordenado por facturación del mes</p>
           </div>
           <button className="flex items-center gap-1.5 text-xs text-[#10B981] hover:text-[#34D399] font-semibold transition-colors group">
             Ver todos <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />

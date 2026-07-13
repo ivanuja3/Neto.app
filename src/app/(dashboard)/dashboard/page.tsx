@@ -145,7 +145,7 @@ function KpiCard({
             </div>
           </div>
           <div>
-            <div className="text-[1.6rem] font-bold text-[#F1F5F9] font-mono tracking-tight leading-none">
+            <div className="text-[1.6rem] font-bold text-[#F1F5F9] tracking-tight leading-none" style={{ fontVariantNumeric: "tabular-nums" }}>
               {displayValue}
             </div>
             <div className="flex items-center gap-2 mt-2.5">
@@ -696,17 +696,11 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">
-              {company?.name && company.name !== "Mi negocio"
-                ? company.name
-                : "Dashboard"}
-            </h1>
-            <div className="flex items-center gap-1.5 bg-[#10B981]/10 border border-[#10B981]/25 rounded-full px-2.5 py-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-              <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-wider">Live</span>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">
+            {company?.name && company.name !== "Mi negocio"
+              ? company.name
+              : "Dashboard"}
+          </h1>
           <p className="text-sm text-[#64748B] mt-1">
             {new Date().toLocaleString("es-AR", { month: "long", year: "numeric" }).replace(/^\w/, (c) => c.toUpperCase())} · {company?.name && company.name !== "Mi negocio" ? "Dashboard" : "Neto.app"}
           </p>
@@ -772,7 +766,6 @@ export default function DashboardPage() {
           <div className="flex items-start justify-between mb-5">
             <div>
               <h2 className="text-sm font-semibold text-[#F1F5F9]">Ingresos y Margen Neto</h2>
-              <p className="text-xs text-[#475569] mt-0.5">Evolución últimos 6 meses</p>
             </div>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
@@ -808,7 +801,6 @@ export default function DashboardPage() {
         <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.10] transition-colors">
           <div className="mb-5">
             <h2 className="text-sm font-semibold text-[#F1F5F9]">Ventas por canal</h2>
-            <p className="text-xs text-[#475569] mt-0.5">Distribución del mes</p>
           </div>
           {loading ? (
             <div className="h-[220px] bg-white/[0.03] rounded-lg animate-pulse" />
@@ -838,7 +830,6 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05]">
           <div>
             <h2 className="text-sm font-semibold text-[#F1F5F9]">Performance por SKU</h2>
-            <p className="text-xs text-[#475569] mt-0.5">Ordenado por margen</p>
           </div>
           <button className="flex items-center gap-1.5 text-xs text-[#10B981] hover:text-[#34D399] transition-colors font-semibold group">
             Ver todos
