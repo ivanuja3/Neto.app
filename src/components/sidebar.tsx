@@ -90,12 +90,9 @@ function Logo() {
   return (
     <div className="flex items-center gap-2.5">
       <NetoMark size={32} />
-      <div className="flex flex-col leading-none gap-[3px]">
-        <span className="font-black text-[14.5px] text-[#F1F5F9] tracking-[0.02em]">
-          NETO<span className="text-[#10B981]">.</span>
-        </span>
-        <span className="text-[9.5px] font-medium text-[#334155] tracking-[0.18em] uppercase">Dashboard</span>
-      </div>
+      <span className="font-black text-[15px] text-[#F1F5F9] tracking-tight">
+        NETO<span className="text-[#10B981]">.</span>
+      </span>
     </div>
   );
 }
@@ -121,19 +118,12 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
         {NAV_SECTIONS.map((section, si) => (
-          <div key={section.label} className={si > 0 ? "mt-4" : ""}>
-            {/* Section label */}
-            <p className="text-[9.5px] font-semibold text-[#334155] uppercase tracking-widest px-3 mb-1">
-              {section.label}
-            </p>
-
+          <div key={section.label} className={si > 0 ? "mt-5" : ""}>
             <div className="space-y-0.5">
               {section.items.filter((item) => enabledKeys.includes(item.key as never)).map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                const badge  = (item as { badge?: string }).badge;
-                const isBeta    = badge === "Beta";
-                const isPreview = badge === "Preview";
+                const isIncomplete = !!(item as { badge?: string }).badge;
 
                 return (
                   <Link
@@ -141,34 +131,24 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
                     href={item.href}
                     onClick={onNavigate}
                     className={cn(
-                      "relative flex items-center gap-3 px-3 py-[9px] rounded-xl text-sm transition-all duration-150 group",
+                      "relative flex items-center gap-2.5 px-3 py-[8px] rounded-lg text-sm transition-colors duration-100 group",
                       active
                         ? "bg-[#10B981]/[0.10] text-[#10B981]"
-                        : isBeta
-                        ? "text-[#94A3B8] hover:bg-white/[0.04] hover:text-[#6EE7B7]"
-                        : "text-[#94A3B8] hover:bg-white/[0.04] hover:text-[#E2E8F0]"
+                        : "text-[#64748B] hover:bg-white/[0.07] hover:text-[#CBD5E1]"
                     )}
                   >
                     {active && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[18px] bg-[#10B981] rounded-r-full" />
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[16px] bg-[#10B981] rounded-r-full" />
                     )}
                     <Icon className={cn(
-                      "w-[15px] h-[15px] shrink-0 transition-colors duration-150",
-                      active ? "text-[#10B981]" : isBeta ? "text-[#475569] group-hover:text-[#6EE7B7]" : "text-[#475569] group-hover:text-[#94A3B8]"
+                      "w-[14px] h-[14px] shrink-0",
+                      active ? "text-[#10B981]" : "text-[#475569] group-hover:text-[#64748B]"
                     )} />
                     <span className={cn("flex-1 text-[13px] leading-none", active && "font-semibold")}>
                       {item.label}
                     </span>
-                    {badge && (
-                      <span className={cn(
-                        "text-[9px] font-bold px-1.5 py-[3px] rounded-md tracking-wide",
-                        active
-                          ? isPreview ? "bg-[#8B5CF6]/20 text-[#A78BFA]" : "bg-[#10B981]/20 text-[#10B981]"
-                          : isPreview ? "bg-[#8B5CF6]/15 text-[#A78BFA] border border-[#8B5CF6]/20"
-                          : "bg-gradient-to-r from-[#10B981]/20 to-[#06B6D4]/15 text-[#34D399] border border-[#10B981]/15"
-                      )}>
-                        {badge}
-                      </span>
+                    {isIncomplete && !active && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#475569] shrink-0" />
                     )}
                   </Link>
                 );
@@ -178,27 +158,27 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <div className="mx-4 h-px shrink-0 bg-gradient-to-r from-transparent via-[#10B981]/[0.18] to-transparent" />
+      <div className="mx-4 h-px shrink-0 bg-white/[0.05]" />
 
       <div className="px-2.5 py-3 space-y-0.5 shrink-0">
         <Link
           href="/configuracion"
           onClick={onNavigate}
           className={cn(
-            "flex items-center gap-3 px-3 py-[9px] rounded-xl text-sm transition-all duration-150 group",
+            "flex items-center gap-2.5 px-3 py-[8px] rounded-lg text-sm transition-colors duration-100 group",
             pathname === "/configuracion"
-              ? "bg-gradient-to-r from-[#10B981]/[0.14] to-[#10B981]/[0.02] text-[#10B981]"
-              : "text-[#94A3B8] hover:bg-white/[0.04] hover:text-[#E2E8F0]"
+              ? "bg-[#10B981]/[0.10] text-[#10B981]"
+              : "text-[#64748B] hover:bg-white/[0.07] hover:text-[#CBD5E1]"
           )}
         >
-          <Settings className="w-[15px] h-[15px] text-[#475569] group-hover:text-[#94A3B8] transition-colors" />
+          <Settings className="w-[14px] h-[14px] shrink-0 text-[#475569] group-hover:text-[#64748B]" />
           <span className="flex-1 text-[13px]">Configuración</span>
         </Link>
 
         <div className="flex items-center gap-2.5 px-3 py-[9px] rounded-xl">
           <div className="shrink-0">
-            <div className="w-7 h-7 rounded-full bg-[#10B981]/15 flex items-center justify-center">
-              <span className="text-[11px] font-bold text-[#10B981]">{initials}</span>
+            <div className="w-6 h-6 rounded-md bg-[#111E30] border border-white/[0.08] flex items-center justify-center">
+              <span className="text-[10px] font-bold text-[#64748B]">{initials}</span>
             </div>
           </div>
           <div className="flex-1 text-left min-w-0">
