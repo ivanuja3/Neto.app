@@ -272,12 +272,10 @@ export default function PresupuestosPage() {
 
       {/* Lista */}
       {quotes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <ClipboardList className="w-10 h-10 text-[#1E2D3D]" />
-          <p className="text-sm text-[#475569] font-semibold">Sin presupuestos aún</p>
-          <p className="text-xs text-[#334155]">Creá tu primera cotización para un cliente</p>
-          <button onClick={newQuote} className="mt-2 text-sm font-semibold text-[#10B981] hover:underline">
-            Crear presupuesto
+        <div className="flex items-center justify-between px-5 py-4 bg-[#0C1424] border border-white/[0.06] rounded-xl">
+          <p className="text-sm text-[#475569]">Sin presupuestos todavía</p>
+          <button onClick={newQuote} className="text-sm font-semibold text-[#10B981] hover:text-[#34D399] transition-colors">
+            Crear el primero
           </button>
         </div>
       ) : (
