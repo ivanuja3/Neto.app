@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getPnlMonthly, getAnalyticLines } from "@/lib/db/analytics";
-import { TrendingUp, TrendingDown, ArrowDown, ArrowUp, AlertTriangle, Wallet, Lock } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowDown, ArrowUp, AlertTriangle, Lock, Search } from "lucide-react";
+import { FilterModal, FilterButton, type FilterValues } from "@/components/ui/filter-modal";
 import { formatARS } from "@/lib/mock-data";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -31,7 +32,33 @@ type AnalyticLine = {
 };
 
 type MainTab = "transacciones" | "cierres";
-type SubTab  = "todos" | "ingresos" | "egresos" | "por_cobrar" | "por_pagar";
+
+const FLUJO_FILTER_SECTIONS = [
+  {
+    type: "chips" as const,
+    label: "Tipo",
+    key: "tipo",
+    multi: false,
+    options: [
+      { value: "ingresos", label: "Ingresos" },
+      { value: "egresos",  label: "Egresos" },
+    ],
+  },
+  {
+    type: "chips" as const,
+    label: "Categoría",
+    key: "categoria",
+    multi: true,
+    options: [
+      { value: "venta",     label: "Ventas" },
+      { value: "cogs",      label: "COGS" },
+      { value: "marketing", label: "Marketing" },
+      { value: "logistica", label: "Logística" },
+      { value: "fijo",      label: "Gastos fijos" },
+      { value: "impuesto",  label: "Impuestos" },
+    ],
+  },
+] satisfies import("@/components/ui/filter-modal").FilterSection[];
 
 const MES_LABELS: Record<string, string> = {
   "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
@@ -64,8 +91,9 @@ export default function FlujoPage() {
   const [pnl,          setPnl]          = useState<PnlRow[]>([]);
   const [movimientos,  setMovimientos]  = useState<AnalyticLine[]>([]);
   const [mainTab,      setMainTab]      = useState<MainTab>("transacciones");
-  const [subTab,       setSubTab]       = useState<SubTab>("todos");
   const [search,       setSearch]       = useState("");
+  const [filterOpen,   setFilterOpen]   = useState(false);
+  const [filters,      setFilters]      = useState<FilterValues>({ tipo: "", categoria: [] });
 
   useEffect(() => {
     if (!user) return;
@@ -122,16 +150,21 @@ export default function FlujoPage() {
     return { totalIngresos: tIn, totalEgresos: tEg, countIngresos: cIn, countEgresos: cEg };
   }, [movimientos]);
 
-  /* ── Filtrado sub-tabs + search ── */
+  /* contar filtros activos */
+  const activeFilterCount = [
+    filters.tipo !== "",
+    Array.isArray(filters.categoria) && filters.categoria.length > 0,
+  ].filter(Boolean).length;
+
+  /* ── Filtrado con FilterModal ── */
   const movsFiltrados = useMemo(() => movimientos.filter((m) => {
-    const matchSub =
-      subTab === "todos"      ? true :
-      subTab === "ingresos"   ? m.amount > 0 :
-      subTab === "egresos"    ? m.amount < 0 :
-      false;
+    const tipo = filters.tipo as string;
+    const cats = filters.categoria as string[];
+    const matchTipo = !tipo || (tipo === "ingresos" ? m.amount > 0 : m.amount < 0);
+    const matchCat  = cats.length === 0 || cats.includes(m.category);
     const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase());
-    return matchSub && matchSearch;
-  }), [movimientos, subTab, search]);
+    return matchTipo && matchCat && matchSearch;
+  }), [movimientos, filters, search]);
   const movsShown = movsFiltrados.slice(0, 200);
 
   return (
@@ -283,47 +316,46 @@ export default function FlujoPage() {
             )}
           </div>
 
-          {/* Movimientos: 4 sub-tabs + search */}
+          {/* Movimientos */}
+          <FilterModal
+            open={filterOpen}
+            onClose={() => setFilterOpen(false)}
+            sections={FLUJO_FILTER_SECTIONS}
+            values={filters}
+            onApply={setFilters}
+          />
+
           <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl">
-            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-white/[0.06]">
-              {/* Sub-tabs */}
-              <div className="flex items-center gap-1">
-                {([
-                  { key: "todos",      label: `Todos (${movimientos.length})` },
-                  { key: "ingresos",   label: `Ingresos (${countIngresos})` },
-                  { key: "egresos",    label: `Egresos (${countEgresos})` },
-                  { key: "por_cobrar", label: "Por cobrar" },
-                  { key: "por_pagar",  label: "Por pagar" },
-                ] as const).map((t) => (
-                  <button key={t.key} onClick={() => setSubTab(t.key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                      subTab === t.key ? "bg-[#10B981]/10 text-[#10B981]" : "text-[#475569] hover:text-[#94A3B8]"
-                    }`}>
-                    {t.label}
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/[0.06]">
+              {/* Conteo + resumen activo */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-[#94A3B8]">
+                  <span className="text-[#F1F5F9] font-semibold tabular-nums">{movsFiltrados.length}</span> movimientos
+                </span>
+                {activeFilterCount > 0 && (
+                  <button onClick={() => setFilters({ tipo: "", categoria: [] })}
+                    className="text-xs text-[#475569] hover:text-[#EF4444] transition-colors underline underline-offset-2">
+                    Limpiar
                   </button>
-                ))}
+                )}
               </div>
 
-              {/* Search */}
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar movimiento..."
-                className="bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#334155] rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#10B981]/40 transition-colors w-48"
-              />
+              {/* Toolbar derecho */}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#334155] pointer-events-none" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar..."
+                    className="bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] placeholder-[#334155] rounded-lg pl-8 pr-3 py-1.5 text-xs outline-none focus:border-[#10B981]/40 transition-colors w-44"
+                  />
+                </div>
+                <FilterButton onClick={() => setFilterOpen(true)} activeCount={activeFilterCount} />
+              </div>
             </div>
 
-            {/* Placeholder para "Por cobrar" y "Por pagar" */}
-            {(subTab === "por_cobrar" || subTab === "por_pagar") ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center">
-                  <Wallet className="w-5 h-5 text-[#475569]" />
-                </div>
-                <p className="text-sm text-[#475569]">
-                  {subTab === "por_cobrar" ? "Cuentas por cobrar próximamente" : "Cuentas por pagar próximamente"}
-                </p>
-              </div>
-            ) : loading ? (
+            {loading ? (
               <div className="divide-y divide-white/[0.04]">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-3 px-5 py-3.5 animate-pulse">
@@ -365,7 +397,7 @@ export default function FlujoPage() {
               </div>
             )}
 
-            {!loading && movsFiltrados.length > 0 && subTab !== "por_cobrar" && subTab !== "por_pagar" && (
+            {!loading && movsFiltrados.length > 0 && (
               <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/[0.06] bg-white/[0.02]">
                 <span className="text-sm text-[#94A3B8]">
                   {movsFiltrados.length > 200

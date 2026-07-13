@@ -4,10 +4,10 @@
 type NavKey =
   | "dashboard" | "ventas" | "presupuestos" | "caja" | "inventario" | "clientes" | "proveedores"
   | "margenes" | "costos" | "flujo" | "proyecciones"
-  | "ads" | "impuestos" | "contabilidad" | "ia";
+  | "ads" | "impuestos" | "contabilidad" | "ia" | "empleados";
 
 const BASE: NavKey[] = [
-  "dashboard", "ventas", "inventario", "clientes", "proveedores",
+  "dashboard", "ventas", "inventario", "clientes", "empleados", "proveedores",
   "margenes", "costos", "flujo", "proyecciones",
   "ads", "impuestos", "contabilidad", "ia",
 ];

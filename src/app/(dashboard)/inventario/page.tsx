@@ -7,6 +7,7 @@ import { getTopProducts } from "@/lib/db/orders";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PlusCircle, AlertTriangle, ArrowUp, ArrowDown, Package, Pencil, Upload, Search, X, TrendingUp } from "lucide-react";
+import { FilterModal, FilterButton } from "@/components/ui/filter-modal";
 import { ProductImport } from "@/components/product-import";
 import { formatARS, formatNumber } from "@/lib/mock-data";
 import {
@@ -278,6 +279,7 @@ export default function InventarioPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [search, setSearch]      = useState("");
   const [catFilter, setCatFilter] = useState<string>("todas");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showBulk, setShowBulk]  = useState(false);
   const [bulkPct, setBulkPct]    = useState("");
   const [bulkField, setBulkField] = useState<"list_price" | "price_cash" | "price_installments" | "standard_cost">("list_price");
@@ -548,9 +550,24 @@ export default function InventarioPage() {
           </button>
         </div>
 
-        {/* Búsqueda + chips de categoría */}
-        <div className="px-5 py-3 border-b border-white/[0.06] space-y-3">
-          <div className="relative">
+        {/* Búsqueda + filtros */}
+        <FilterModal
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          sections={[
+            {
+              type: "chips",
+              label: "Categoría",
+              key: "categoria",
+              multi: false,
+              options: uniqueCats.map((c) => ({ value: c, label: c })),
+            },
+          ]}
+          values={{ categoria: catFilter === "todas" ? "" : catFilter }}
+          onApply={(v) => setCatFilter((v.categoria as string) || "todas")}
+        />
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.06]">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#475569] pointer-events-none" />
             <input
               value={search}
@@ -565,19 +582,11 @@ export default function InventarioPage() {
               </button>
             )}
           </div>
-          {uniqueCats.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
-              {(["todas", ...uniqueCats] as string[]).map((cat) => (
-                <button key={cat} onClick={() => setCatFilter(cat)}
-                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all border ${
-                    catFilter === cat
-                      ? "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30"
-                      : "bg-white/[0.04] text-[#475569] border-white/[0.06] hover:text-[#94A3B8] hover:border-white/[0.12]"
-                  }`}>
-                  {cat === "todas" ? "Todas" : cat}
-                </button>
-              ))}
-            </div>
+          {uniqueCats.length > 0 && (
+            <FilterButton
+              onClick={() => setFilterOpen(true)}
+              activeCount={catFilter !== "todas" ? 1 : 0}
+            />
           )}
         </div>
 

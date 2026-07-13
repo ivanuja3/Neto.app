@@ -8,6 +8,7 @@ import { getProducts, registerStockMove } from "@/lib/db/products";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CsvImport } from "@/components/csv-import";
+import { FilterModal, FilterButton, type FilterValues } from "@/components/ui/filter-modal";
 import { formatARS } from "@/lib/mock-data";
 import { supabase } from "@/lib/supabase";
 import { ArrowUpRight, PlusCircle, ShoppingCart, RefreshCw, Upload, Search, X, Calendar } from "lucide-react";
@@ -405,9 +406,12 @@ export default function VentasPage() {
 
   /* Historial */
   const [periodo,      setPeriodo]      = useState<Periodo>("mes");
-  const [metodoPago,   setMetodoPago]   = useState("");
   const [rangoFrom,    setRangoFrom]    = useState("");
   const [rangoTo,      setRangoTo]      = useState("");
+  const [filterOpen,   setFilterOpen]   = useState(false);
+  const [histFilters,  setHistFilters]  = useState<FilterValues>({ metodoPago: "", canal: "" });
+  const metodoPago = histFilters.metodoPago as string;
+  const canalFiltro = histFilters.canal as string;
   const [orders,       setOrders]       = useState<Order[]>([]);
   const [histLoading,  setHistLoading]  = useState(false);
 
@@ -424,6 +428,7 @@ export default function VentasPage() {
         dateFrom: from,
         dateTo: to,
         paymentMethod: metodoPago || undefined,
+        channel: canalFiltro || undefined,
       });
       if (histReqRef.current !== myReq) return;
       setOrders(res.data ?? []);
@@ -432,7 +437,7 @@ export default function VentasPage() {
     } finally {
       if (histReqRef.current === myReq) setHistLoading(false);
     }
-  }, [user, periodo, metodoPago, rangoFrom, rangoTo, refreshKey]);
+  }, [user, periodo, metodoPago, canalFiltro, rangoFrom, rangoTo, refreshKey]);
 
   useEffect(() => {
     if (tab === "historial") loadHistorial();
@@ -593,19 +598,46 @@ export default function VentasPage() {
             )}
           </div>
 
-          {/* Chips método de pago */}
-          <div className="flex flex-wrap gap-2">
-            {METODOS_PAGO.map((m) => (
-              <button key={m.key} onClick={() => setMetodoPago(m.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                  metodoPago === m.key
-                    ? "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30"
-                    : "bg-white/[0.03] text-[#475569] border-white/[0.08] hover:border-white/[0.16] hover:text-[#94A3B8]"
-                }`}>
-                {m.label}
-              </button>
-            ))}
+          {/* Barra de filtros */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[#64748B]">
+              <span className="text-[#F1F5F9] font-semibold tabular-nums">{orders.length}</span> transacciones
+            </span>
+            <FilterButton
+              onClick={() => setFilterOpen(true)}
+              activeCount={[metodoPago !== "", canalFiltro !== ""].filter(Boolean).length}
+            />
           </div>
+
+          <FilterModal
+            open={filterOpen}
+            onClose={() => setFilterOpen(false)}
+            sections={[
+              {
+                type: "chips",
+                label: "Método de pago",
+                key: "metodoPago",
+                multi: false,
+                options: METODOS_PAGO.filter((m) => m.key !== "").map((m) => ({ value: m.key, label: m.label })),
+              },
+              {
+                type: "chips",
+                label: "Canal de venta",
+                key: "canal",
+                multi: false,
+                options: [
+                  { value: "tiendanube",   label: "Tienda Nube" },
+                  { value: "mercadolibre", label: "MercadoLibre" },
+                  { value: "instagram",    label: "Instagram" },
+                  { value: "whatsapp",     label: "WhatsApp" },
+                  { value: "web",          label: "Web" },
+                  { value: "other",        label: "Otro" },
+                ],
+              },
+            ]}
+            values={histFilters}
+            onApply={setHistFilters}
+          />
 
           {/* Lista de órdenes */}
           <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl overflow-hidden">

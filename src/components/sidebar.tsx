@@ -23,6 +23,7 @@ import {
   ClipboardList,
   ScanLine,
   BookOpen,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./auth-provider";
@@ -40,6 +41,7 @@ const NAV_SECTIONS = [
       { key: "caja",         label: "Caja / POS",    href: "/caja",          icon: ScanLine },
       { key: "inventario",   label: "Inventario",    href: "/inventario",    icon: Package },
       { key: "clientes",     label: "Clientes",      href: "/clientes",      icon: Users },
+      { key: "empleados",    label: "Empleados",     href: "/empleados",     icon: UserCircle },
       { key: "proveedores",  label: "Proveedores",   href: "/proveedores",   icon: Truck },
     ],
   },
