@@ -267,7 +267,7 @@ export default function MargenesPage() {
           <h2 className="text-sm font-semibold text-[#F1F5F9] mb-1">Evolución de márgenes</h2>
           <p className="text-xs text-[#475569] mb-5">Bruto% · Operativo% · Neto% por mes</p>
           {loading ? (
-            <div className="h-[200px] bg-white/[0.03] rounded-lg animate-pulse" />
+            <div className="h-[200px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={trendData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }} barGap={2}>
@@ -277,7 +277,7 @@ export default function MargenesPage() {
                   tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
                 <Tooltip
                   formatter={(v, name) => [`${Number(v).toFixed(1)}%`, name === "cm1_pct" ? "Bruto" : name === "cm2_pct" ? "Operativo" : "Neto"]}
-                  contentStyle={{ background: "#0D1829", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, color: "#F1F5F9", fontSize: 12 }} />
+                  contentStyle={{ background: "#060D19", border: "1px solid rgba(16,185,129,0.20)", borderTop: "2px solid rgba(16,185,129,0.35)", borderRadius: 8, color: "#F1F5F9", fontSize: 12 }} />
                 <ReferenceLine y={30} stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
                 <Bar dataKey="cm1_pct" name="Bruto" fill="#10B981" opacity={0.5} radius={[3, 3, 0, 0]} />
                 <Bar dataKey="cm2_pct" name="Operativo" fill="#3B82F6" opacity={0.7} radius={[3, 3, 0, 0]} />

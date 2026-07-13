@@ -434,7 +434,7 @@ export default function InventarioPage() {
           ].map((k) => (
             <div key={k.label} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.12] transition-colors cursor-default">
               <p className="text-sm text-[#94A3B8]">{k.label}</p>
-              <p className="text-2xl font-bold font-mono mt-3" style={{ color: k.color }}>{k.value}</p>
+              <p className="text-2xl font-bold tabular-nums mt-3" style={{ color: k.color }}>{k.value}</p>
               <p className="text-xs text-[#475569] mt-1">{k.sub}</p>
             </div>
           ))
@@ -462,7 +462,7 @@ export default function InventarioPage() {
         <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
           <h2 className="text-sm font-semibold text-[#F1F5F9] mb-4">Valor por categoría</h2>
           {loading ? (
-            <div className="h-[180px] bg-white/[0.03] rounded-lg animate-pulse" />
+            <div className="h-[180px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={catData} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
@@ -470,7 +470,7 @@ export default function InventarioPage() {
                 <XAxis type="number" tick={{ fill: "#475569", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
                 <YAxis dataKey="categoria" type="category" tick={{ fill: "#94A3B8", fontSize: 11 }} axisLine={false} tickLine={false} width={90} />
                 <Tooltip formatter={(v) => [formatARS(Number(v)), "Valor en stock"]}
-                  contentStyle={{ background: "#0D1829", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, color: "#F1F5F9", fontSize: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }} />
+                  contentStyle={{ background: "#060D19", border: "1px solid rgba(16,185,129,0.20)", borderTop: "2px solid rgba(16,185,129,0.35)", borderRadius: 8, color: "#F1F5F9", fontSize: 12 }} />
                 <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
                   {catData.map((entry) => <Cell key={entry.categoria} fill={catColor(entry.categoria)} />)}
                 </Bar>

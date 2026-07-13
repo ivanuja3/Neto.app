@@ -239,7 +239,7 @@ export default function PresupuestosPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.05]">
         <div>
-          <h1 className="text-xl font-bold text-[#F1F5F9] tracking-tight">Presupuestos</h1>
+          <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Presupuestos</h1>
           <p className="text-xs text-[#475569] mt-0.5">Cotizaciones y propuestas comerciales</p>
         </div>
         <button
@@ -526,7 +526,7 @@ export default function PresupuestosPage() {
                   {/* Total */}
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/[0.08]">
                     <span className="text-sm font-semibold text-[#94A3B8]">Total del presupuesto</span>
-                    <span className="text-xl font-bold font-mono text-[#F1F5F9]">{formatARS(total)}</span>
+                    <span className="text-xl font-bold tabular-nums text-[#F1F5F9]">{formatARS(total)}</span>
                   </div>
                 </div>
               ) : (

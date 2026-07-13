@@ -104,7 +104,7 @@ export default function AdsPage() {
             {loading ? (
               <div className="mt-3 h-7 bg-white/[0.07] rounded w-28 animate-pulse" />
             ) : (
-              <p className="text-[1.6rem] font-bold font-mono mt-3 leading-none tracking-tight" style={{ color: m.color }}>
+              <p className="text-[1.6rem] font-bold tabular-nums mt-3 leading-none tracking-tight" style={{ color: m.color }}>
                 {m.value}
               </p>
             )}
@@ -122,11 +122,11 @@ export default function AdsPage() {
           </div>
           <div className="flex items-center gap-1.5 text-xs text-[#475569] bg-white/[0.04] border border-white/[0.06] px-3 py-1.5 rounded-lg">
             Break-even:
-            <span className="text-[#F1F5F9] font-mono font-bold ml-1">2.0x</span>
+            <span className="text-[#F1F5F9] font-bold tabular-nums ml-1">2.0x</span>
           </div>
         </div>
         {loading ? (
-          <div className="h-[220px] bg-white/[0.03] rounded-lg animate-pulse" />
+          <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
         ) : adMetrics.length === 0 ? (
           <div className="h-[220px] flex items-center justify-center text-sm text-[#475569]">Sin datos de campañas</div>
         ) : (
@@ -137,7 +137,7 @@ export default function AdsPage() {
               <YAxis tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false}
                 tickFormatter={(v) => `${v}x`} domain={[0, "auto"]} />
               <Tooltip formatter={(v) => [`${Number(v).toFixed(2)}x`, "ROAS Real"]}
-                contentStyle={{ background: "#0D1829", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, color: "#F1F5F9", fontSize: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }} />
+                contentStyle={{ background: "#060D19", border: "1px solid rgba(16,185,129,0.20)", borderTop: "2px solid rgba(16,185,129,0.35)", borderRadius: 8, color: "#F1F5F9", fontSize: 12 }} />
               <ReferenceLine y={2} stroke="rgba(239,68,68,0.3)" strokeDasharray="4 3"
                 label={{ value: "break-even", position: "right", fill: "#EF4444", fontSize: 10 }} />
               <Line type="monotone" dataKey="roasReal" stroke="#10B981" strokeWidth={2.5}

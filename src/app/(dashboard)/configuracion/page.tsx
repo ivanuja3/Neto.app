@@ -430,7 +430,7 @@ function ConfiguracionPageInner() {
                     <p className="text-xs text-[#475569] mt-2">Próxima facturación: 15/07/2026</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold font-mono text-[#F1F5F9]">$29</p>
+                    <p className="text-2xl font-bold tabular-nums text-[#F1F5F9]">$29</p>
                     <p className="text-xs text-[#475569]">USD / mes</p>
                   </div>
                 </div>

@@ -425,7 +425,7 @@ export default function CajaPage() {
             {/* Total */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-[#475569]">Total</span>
-              <span className="text-2xl font-bold font-mono text-[#F1F5F9]">{formatARS(total)}</span>
+              <span className="text-2xl font-bold tabular-nums text-[#F1F5F9]">{formatARS(total)}</span>
             </div>
 
             {/* Método de pago */}

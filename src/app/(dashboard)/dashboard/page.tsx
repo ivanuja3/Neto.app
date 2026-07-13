@@ -190,13 +190,14 @@ function ChartTooltip({ active, payload, label }: {
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#0D1829] border border-white/[0.10] rounded-xl p-3.5 shadow-2xl text-xs backdrop-blur-sm">
-      <p className="text-[#94A3B8] font-medium mb-2.5">{label}</p>
+    <div className="bg-[#060D19] border border-[#10B981]/[0.18] rounded-lg px-3.5 py-3 shadow-2xl text-xs"
+      style={{ borderTop: "2px solid rgba(16,185,129,0.35)" }}>
+      <p className="text-[#475569] font-medium mb-2 tabular-nums">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 mb-1 last:mb-0">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
-          <span className="text-[#64748B]">{p.name === "ingresos" ? "Ingresos" : "Margen Neto"}:</span>
-          <span className="text-[#F1F5F9] font-mono font-semibold ml-auto pl-3">
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: p.color }} />
+          <span className="text-[#64748B]">{p.name === "ingresos" ? "Ingresos" : "Margen"}:</span>
+          <span className="text-[#F1F5F9] font-semibold tabular-nums ml-auto pl-4">
             {p.name === "ingresos" ? formatARS(p.value) : `${p.value}%`}
           </span>
         </div>
@@ -779,7 +780,7 @@ export default function DashboardPage() {
             </div>
           </div>
           {loading ? (
-            <div className="h-[220px] bg-white/[0.03] rounded-lg animate-pulse" />
+            <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={ingresosPorMes} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
@@ -803,7 +804,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-[#F1F5F9]">Ventas por canal</h2>
           </div>
           {loading ? (
-            <div className="h-[220px] bg-white/[0.03] rounded-lg animate-pulse" />
+            <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
           ) : ventasPorCanal.length === 0 ? (
             <div className="h-[220px] flex items-center justify-center text-xs text-[#475569]">Sin datos de canal este mes</div>
           ) : (
@@ -813,7 +814,7 @@ export default function DashboardPage() {
                 <XAxis type="number" tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, "auto"]} />
                 <YAxis dataKey="canal" type="category" tick={{ fill: "#94A3B8", fontSize: 11 }} axisLine={false} tickLine={false} width={100} />
                 <Tooltip formatter={(v) => [`${v}%`, "Participación"]}
-                  contentStyle={{ background: "#0D1829", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, color: "#F1F5F9", fontSize: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }} />
+                  contentStyle={{ background: "#060D19", border: "1px solid rgba(16,185,129,0.20)", borderTop: "2px solid rgba(16,185,129,0.35)", borderRadius: 8, color: "#F1F5F9", fontSize: 12 }} />
                 <Bar dataKey="porcentaje" radius={[0, 5, 5, 0]}>
                   {ventasPorCanal.map((entry) => (
                     <Cell key={entry.canal} fill={entry.color} />
@@ -839,7 +840,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="p-5 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 bg-white/[0.03] rounded animate-pulse" />
+              <div key={i} className="h-10 bg-[#10B981]/[0.04] rounded animate-pulse" />
             ))}
           </div>
         ) : skus.length === 0 ? (

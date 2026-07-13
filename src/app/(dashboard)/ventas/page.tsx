@@ -699,7 +699,7 @@ export default function VentasPage() {
           <h2 className="text-sm font-semibold text-[#F1F5F9]">Evolución de ingresos</h2>
         </div>
         {loading ? (
-          <div className="h-[240px] bg-white/[0.03] rounded-lg animate-pulse" />
+          <div className="h-[240px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
         ) : (
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={ingresosPorMes} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
@@ -708,7 +708,7 @@ export default function VentasPage() {
               <YAxis tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false}
                 tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} />
               <Tooltip formatter={(v) => [formatARS(Number(v)), "Ingresos"]}
-                contentStyle={{ background: "#0D1829", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, color: "#F1F5F9", fontSize: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}
+                contentStyle={{ background: "#060D19", border: "1px solid rgba(16,185,129,0.20)", borderTop: "2px solid rgba(16,185,129,0.35)", borderRadius: 8, color: "#F1F5F9", fontSize: 12 }}
                 cursor={{ fill: "rgba(255,255,255,0.03)" }} />
               <Bar dataKey="ingresos" radius={[5, 5, 0, 0]}>
                 {ingresosPorMes.map((_, i) => (

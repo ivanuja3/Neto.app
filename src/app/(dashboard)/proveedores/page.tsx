@@ -312,7 +312,7 @@ export default function ProveedoresPage() {
           ].map((k) => (
             <div key={k.label} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.12] transition-colors cursor-default">
               <p className="text-sm text-[#94A3B8]">{k.label}</p>
-              <p className="text-2xl font-bold font-mono mt-3" style={{ color: k.color }}>{k.value}</p>
+              <p className="text-2xl font-bold tabular-nums mt-3" style={{ color: k.color }}>{k.value}</p>
               <p className="text-xs text-[#475569] mt-1">{k.sub}</p>
             </div>
           ))

@@ -185,7 +185,7 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
             <p className="text-[12px] font-semibold text-[#F1F5F9] truncate leading-tight">
               {user?.email?.split("@")[0] ?? "Usuario"}
             </p>
-            <p className="text-[10px] text-[#F59E0B] font-medium truncate leading-tight mt-0.5">Plan Gratis</p>
+            <p className="text-[10px] text-[#475569] truncate leading-tight mt-0.5">Plan gratuito</p>
           </div>
           <button
             onClick={handleSignOut}

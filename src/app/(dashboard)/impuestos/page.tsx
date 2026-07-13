@@ -202,7 +202,7 @@ export default function ImpuestosPage() {
           ].map((k) => (
             <div key={k.label} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.12] transition-colors cursor-default">
               <p className="text-sm text-[#94A3B8]">{k.label}</p>
-              <p className="text-2xl font-bold font-mono mt-3" style={{ color: k.color }}>{k.value}</p>
+              <p className="text-2xl font-bold tabular-nums mt-3" style={{ color: k.color }}>{k.value}</p>
               <p className="text-xs text-[#475569] mt-1">{k.sub}</p>
             </div>
           ))
@@ -288,7 +288,7 @@ export default function ImpuestosPage() {
             </div>
 
             {loading ? (
-              <div className="h-[160px] bg-white/[0.03] rounded-lg animate-pulse" />
+              <div className="h-[160px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -731,7 +731,7 @@ export default function ImpuestosPage() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-xs text-[#475569]">Total a facturar</p>
-                  <p className="text-xl font-bold font-mono text-[#10B981] mt-0.5">
+                  <p className="text-xl font-bold tabular-nums text-[#10B981] mt-0.5">
                     {formatARS(
                       (selectedIds.size > 0 ? orders.filter((o) => selectedIds.has(o.id)) : orders)
                         .reduce((s, o) => s + Number(o.amount_total), 0)

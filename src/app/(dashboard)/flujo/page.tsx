@@ -196,7 +196,7 @@ export default function FlujoPage() {
                     </div>
                     <span className="text-sm text-[#94A3B8]">Balance</span>
                   </div>
-                  <p className={`text-2xl font-bold font-mono ${saldoNeto >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}>
+                  <p className={`text-2xl font-bold tabular-nums ${saldoNeto >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}>
                     {formatARS(saldoNeto)}
                   </p>
                   <p className="text-xs text-[#475569] mt-1">
@@ -211,7 +211,7 @@ export default function FlujoPage() {
                     </div>
                     <span className="text-sm text-[#94A3B8]">Ventas totales</span>
                   </div>
-                  <p className="text-2xl font-bold font-mono text-[#10B981]">{formatARS(totalEntradas)}</p>
+                  <p className="text-2xl font-bold tabular-nums text-[#10B981]">{formatARS(totalEntradas)}</p>
                   <p className="text-xs text-[#475569] mt-1">Cobros acumulados · {mes ? mesLabel(mes.mes) : "—"}</p>
                 </div>
 
@@ -222,7 +222,7 @@ export default function FlujoPage() {
                     </div>
                     <span className="text-sm text-[#94A3B8]">Gastos totales</span>
                   </div>
-                  <p className="text-2xl font-bold font-mono text-[#EF4444]">{formatARS(totalSalidas)}</p>
+                  <p className="text-2xl font-bold tabular-nums text-[#EF4444]">{formatARS(totalSalidas)}</p>
                   <p className="text-xs text-[#475569] mt-1">COGS + Marketing + Logística + Fijos</p>
                 </div>
               </>
@@ -250,7 +250,7 @@ export default function FlujoPage() {
             <h2 className="text-sm font-semibold text-[#F1F5F9] mb-1">Entradas vs Salidas — últimos 6 meses</h2>
             <p className="text-xs text-[#475569] mb-5">Verde = entradas · Rojo = salidas</p>
             {loading ? (
-              <div className="h-[220px] bg-white/[0.03] rounded-lg animate-pulse" />
+              <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
             ) : (
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -273,7 +273,7 @@ export default function FlujoPage() {
                       formatARS(Number(v)),
                       name === "entradas" ? "Entradas" : name === "salidas" ? "Salidas" : "Saldo neto",
                     ]}
-                    contentStyle={{ background: "#0D1829", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, color: "#F1F5F9", fontSize: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}
+                    contentStyle={{ background: "#060D19", border: "1px solid rgba(16,185,129,0.20)", borderTop: "2px solid rgba(16,185,129,0.35)", borderRadius: 8, color: "#F1F5F9", fontSize: 12 }}
                   />
                   <ReferenceLine y={0} stroke="rgba(255,255,255,0.08)" />
                   <Area type="monotone" dataKey="entradas" stroke="#10B981" strokeWidth={2} fill="url(#greenGrad)" name="entradas" />

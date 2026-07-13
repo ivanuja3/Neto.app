@@ -173,7 +173,7 @@ export default function ProyeccionesPage() {
     return (
       <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
         <div className="h-8 bg-white/[0.05] rounded w-48 animate-pulse" />
-        <div className="h-40 bg-white/[0.03] rounded-2xl animate-pulse" />
+        <div className="h-40 bg-[#10B981]/[0.04] rounded-2xl animate-pulse" />
         <div className="grid grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-28 bg-[#0C1424] border border-white/[0.06] rounded-xl animate-pulse" />
@@ -254,7 +254,7 @@ export default function ProyeccionesPage() {
                   <Icon className="w-3.5 h-3.5" style={{ color: k.color }} />
                 </div>
               </div>
-              <p className="text-xl font-bold font-mono mt-3" style={{ color: k.color }}>{k.value}</p>
+              <p className="text-xl font-bold tabular-nums mt-3" style={{ color: k.color }}>{k.value}</p>
               <p className="text-xs text-[#475569] mt-1">{k.sub}</p>
             </div>
           );

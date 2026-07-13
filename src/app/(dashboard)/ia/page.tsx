@@ -47,7 +47,7 @@ export default function IAPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-[#F1F5F9]">Neto IA</h1>
+              <h1 className="text-2xl font-bold text-[#F1F5F9]">Neto IA</h1>
               <span className="text-[9px] font-bold bg-gradient-to-r from-[#10B981]/20 to-[#06B6D4]/15 text-[#34D399] border border-[#10B981]/20 px-1.5 py-[3px] rounded-md tracking-wide">
                 Beta
               </span>
