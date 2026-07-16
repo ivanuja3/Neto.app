@@ -258,6 +258,61 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["analytic_lines"]["Row"], "id" | "created_at">;
         Update: Partial<Database["public"]["Tables"]["analytic_lines"]["Insert"]>;
       };
+
+      employees: {
+        Row: {
+          id: string;
+          user_id: string;
+          nombre: string;
+          rol: string;
+          email: string | null;
+          celular: string | null;
+          fecha_ingreso: string;
+          activo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["employees"]["Row"], "id" | "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["employees"]["Insert"]>;
+      };
+
+      quotes: {
+        Row: {
+          id: string;
+          user_id: string;
+          number: string;
+          client_name: string;
+          date: string;
+          valid_days: number;
+          state: "draft" | "sent" | "accepted" | "rejected";
+          notes: string;
+          amount_total: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["quotes"]["Row"], "id" | "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["quotes"]["Insert"]>;
+      };
+
+      quote_items: {
+        Row: {
+          id: string;
+          quote_id: string;
+          user_id: string;
+          product_id: string | null;
+          product_name: string;
+          sku: string | null;
+          qty: number;
+          price_unit: number;
+          price_mode: string;
+          price_list: number;
+          price_cash: number | null;
+          price_installments: number | null;
+          sort_order: number;
+        };
+        Insert: Omit<Database["public"]["Tables"]["quote_items"]["Row"], "id">;
+        Update: Partial<Database["public"]["Tables"]["quote_items"]["Insert"]>;
+      };
     };
 
     Functions: {
@@ -355,6 +410,9 @@ export type PurchaseItem  = Tables<"purchase_items">;
 export type Expense       = Tables<"expenses">;
 export type AdCampaign    = Tables<"ad_campaigns">;
 export type AnalyticLine  = Tables<"analytic_lines">;
+export type Employee      = Tables<"employees">;
+export type Quote         = Tables<"quotes">;
+export type QuoteItem     = Tables<"quote_items">;
 
 // Tipos compuestos (con joins)
 export type OrderWithItems = Order & { items: OrderItem[] };

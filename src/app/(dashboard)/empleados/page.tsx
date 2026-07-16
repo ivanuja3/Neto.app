@@ -3,6 +3,13 @@
 import { useState, useEffect } from "react";
 import { PlusCircle, Users, Pencil, Trash2, Phone, Mail, Briefcase, UserCheck } from "lucide-react";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
+import { useAuth } from "@/components/auth-provider";
+import {
+  getEmployees,
+  upsertEmployee,
+  deleteEmployee as dbDeleteEmployee,
+} from "@/lib/db/employees";
+import type { Employee } from "@/lib/types/database";
 
 /* ─── Types ─── */
 type Rol = "Administrador" | "Vendedor" | "Almacén" | "Cajero" | "Repartidor" | "Otro";
@@ -19,27 +26,33 @@ interface Empleado {
 
 const ROLES: Rol[] = ["Administrador", "Vendedor", "Almacén", "Cajero", "Repartidor", "Otro"];
 
-const STORAGE_KEY = "neto_empleados";
-
-function loadEmpleados(): Empleado[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveEmpleados(list: Empleado[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
-
-function newId() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
+}
+
+/* ─── Conversores DB ↔ local ─── */
+function dbToLocal(e: Employee): Empleado {
+  return {
+    id: e.id,
+    nombre: e.nombre,
+    rol: e.rol as Rol,
+    email: e.email ?? "",
+    celular: e.celular ?? "",
+    fechaIngreso: e.fecha_ingreso,
+    activo: e.activo,
+  };
+}
+
+function localToDb(e: Omit<Empleado, "id">, userId: string): Omit<Employee, "id" | "created_at" | "updated_at"> {
+  return {
+    user_id: userId,
+    nombre: e.nombre,
+    rol: e.rol,
+    email: e.email || null,
+    celular: e.celular || null,
+    fecha_ingreso: e.fechaIngreso,
+    activo: e.activo,
+  };
 }
 
 /* ─── Formulario ─── */
@@ -137,37 +150,49 @@ function FormEmpleado({
 
 /* ─── Página principal ─── */
 export default function EmpleadosPage() {
+  const { user } = useAuth();
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [selected, setSelected] = useState<Empleado | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setEmpleados(loadEmpleados());
-    setMounted(true);
-  }, []);
+    if (!user) return;
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-  function saveList(list: Empleado[]) {
-    setEmpleados(list);
-    saveEmpleados(list);
+  async function load() {
+    setLoading(true);
+    const rows = await getEmployees(user!.id);
+    setEmpleados(rows.map(dbToLocal));
+    setLoading(false);
   }
 
-  function handleAdd(data: Omit<Empleado, "id">) {
-    saveList([{ id: newId(), ...data }, ...empleados]);
+  async function handleAdd(data: Omit<Empleado, "id">) {
+    if (!user) return;
+    const saved = await upsertEmployee(localToDb(data, user.id));
+    if (saved) setEmpleados((prev) => [dbToLocal(saved), ...prev]);
   }
 
-  function handleEdit(data: Omit<Empleado, "id">) {
-    if (!selected) return;
-    saveList(empleados.map((e) => e.id === selected.id ? { ...e, ...data } : e));
+  async function handleEdit(data: Omit<Empleado, "id">) {
+    if (!selected || !user) return;
+    const saved = await upsertEmployee({ id: selected.id, ...localToDb(data, user.id) });
+    if (saved) setEmpleados((prev) => prev.map((e) => e.id === selected.id ? dbToLocal(saved) : e));
   }
 
-  function toggleActivo(id: string) {
-    saveList(empleados.map((e) => e.id === id ? { ...e, activo: !e.activo } : e));
+  async function toggleActivo(id: string) {
+    if (!user) return;
+    const emp = empleados.find((e) => e.id === id);
+    if (!emp) return;
+    const saved = await upsertEmployee({ id, ...localToDb({ ...emp, activo: !emp.activo }, user.id) });
+    if (saved) setEmpleados((prev) => prev.map((e) => e.id === id ? dbToLocal(saved) : e));
   }
 
-  function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este empleado?")) return;
-    saveList(empleados.filter((e) => e.id !== id));
+  async function handleDelete(id: string) {
+    if (!user || !confirm("¿Eliminar este empleado?")) return;
+    const ok = await dbDeleteEmployee(id, user.id);
+    if (ok) setEmpleados((prev) => prev.filter((e) => e.id !== id));
   }
 
   const activos   = empleados.filter((e) => e.activo).length;
@@ -181,7 +206,13 @@ export default function EmpleadosPage() {
     { label: "Roles distintos",  value: String(roles),            sub: "en el equipo",                                  color: "#8B5CF6", icon: Briefcase },
   ];
 
-  if (!mounted) return null;
+  if (loading) return (
+    <div className="p-6 space-y-4 max-w-[1200px]">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="h-14 bg-[#10B981]/[0.04] rounded-xl animate-pulse" />
+      ))}
+    </div>
+  );
 
   return (
     <div className="p-6 pb-12 space-y-6 max-w-[1200px]">

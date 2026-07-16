@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getProducts } from "@/lib/db/products";
+import {
+  getQuotes as dbGetQuotes,
+  saveQuote as dbSaveQuote,
+  deleteQuote as dbDeleteQuote,
+  type QuoteWithItems,
+} from "@/lib/db/quotes";
 import { formatARS } from "@/lib/mock-data";
-import type { Product } from "@/lib/types/database";
+import type { Product, QuoteItem as DBQuoteItem } from "@/lib/types/database";
 import {
   PlusCircle,
   Search,
@@ -62,6 +68,55 @@ function quoteNumber(n: number) {
   return `PPTO-${String(n).padStart(4, "0")}`;
 }
 
+/* ── Conversores DB ↔ local ── */
+function dbItemToLocal(item: DBQuoteItem): QuoteItem {
+  return {
+    id: item.id,
+    productId: item.product_id ?? "",
+    name: item.product_name,
+    sku: item.sku,
+    qty: item.qty,
+    priceUnit: item.price_unit,
+    priceMode: item.price_mode as PriceMode,
+    priceList: item.price_list,
+    priceCash: item.price_cash,
+    priceInstallments: item.price_installments,
+  };
+}
+
+function dbToLocal(q: QuoteWithItems): Quote {
+  return {
+    id: q.id,
+    number: q.number,
+    clientName: q.client_name,
+    date: q.date,
+    validDays: q.valid_days,
+    state: q.state,
+    notes: q.notes,
+    items: (q.items ?? [])
+      .slice()
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map(dbItemToLocal),
+  };
+}
+
+function localItemToDb(item: QuoteItem): Omit<DBQuoteItem, "id"> {
+  return {
+    quote_id: "",
+    user_id: "",
+    product_id: item.productId || null,
+    product_name: item.name,
+    sku: item.sku,
+    qty: item.qty,
+    price_unit: item.priceUnit,
+    price_mode: item.priceMode,
+    price_list: item.priceList,
+    price_cash: item.priceCash,
+    price_installments: item.priceInstallments,
+    sort_order: 0,
+  };
+}
+
 function itemTotal(item: QuoteItem) {
   return item.qty * item.priceUnit;
 }
@@ -84,6 +139,8 @@ export default function PresupuestosPage() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [editing, setEditing] = useState<Quote | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   /* typeahead */
   const [prodSearch, setProdSearch] = useState("");
@@ -96,47 +153,19 @@ export default function PresupuestosPage() {
     )
     .slice(0, 10);
 
+  async function loadQuotes() {
+    if (!user) return;
+    setLoading(true);
+    const rows = await dbGetQuotes(user.id);
+    setQuotes(rows.map(dbToLocal));
+    setLoading(false);
+  }
+
   useEffect(() => {
     if (!user) return;
     getProducts(user.id).then((ps) => setProducts(ps ?? []));
-    // seed 3 presupuestos demo para que el video se vea completo
-    setQuotes([
-      {
-        id: "q1",
-        number: "PPTO-0001",
-        clientName: "Constructora del Sur",
-        date: "2026-06-20",
-        validDays: 15,
-        state: "accepted",
-        notes: "",
-        items: [
-          { id: "i1", productId: "", name: "Puerta placa cedro 80x200", sku: "P-80-CED", qty: 4, priceUnit: 85000, priceCash: 85000, priceList: 95000, priceInstallments: 102000, priceMode: "cash" },
-          { id: "i2", productId: "", name: "Marco chapa galvanizada", sku: "M-CHAPA", qty: 4, priceUnit: 32000, priceCash: 32000, priceList: 36000, priceInstallments: 38500, priceMode: "cash" },
-        ],
-      },
-      {
-        id: "q2",
-        number: "PPTO-0002",
-        clientName: "Familia Rodríguez",
-        date: "2026-07-01",
-        validDays: 10,
-        state: "sent",
-        notes: "Consultar medida exacta del vano",
-        items: [
-          { id: "i3", productId: "", name: "Ventana aluminio 120x100", sku: "V-AL-1210", qty: 2, priceUnit: 110000, priceCash: 110000, priceList: 125000, priceInstallments: 132000, priceMode: "list" },
-        ],
-      },
-      {
-        id: "q3",
-        number: "PPTO-0003",
-        clientName: "Refacciones López",
-        date: "2026-07-05",
-        validDays: 7,
-        state: "draft",
-        notes: "",
-        items: [],
-      },
-    ]);
+    loadQuotes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   /* Nueva cotización */
@@ -200,11 +229,28 @@ export default function PresupuestosPage() {
     updateItem(item.id, { priceMode: mode, priceUnit });
   }
 
-  function saveQuote() {
-    if (!editing) return;
+  async function saveQuote() {
+    if (!editing || !user) return;
+    setSaving(true);
+    const quoteRow = {
+      id: editing.id,
+      user_id: user.id,
+      number: editing.number,
+      client_name: editing.clientName,
+      date: editing.date,
+      valid_days: editing.validDays,
+      state: editing.state,
+      notes: editing.notes,
+      amount_total: quoteTotal(editing.items),
+    };
+    const itemRows = editing.items.map(localItemToDb);
+    const saved = await dbSaveQuote(user.id, quoteRow, itemRows);
+    setSaving(false);
+    if (!saved) return;
+    const local = dbToLocal(saved);
     setQuotes((prev) => {
-      const exists = prev.find((q) => q.id === editing.id);
-      return exists ? prev.map((q) => (q.id === editing.id ? editing : q)) : [editing, ...prev];
+      const exists = prev.find((q) => q.id === local.id);
+      return exists ? prev.map((q) => (q.id === local.id ? local : q)) : [local, ...prev];
     });
     setShowForm(false);
     setEditing(null);
@@ -215,7 +261,8 @@ export default function PresupuestosPage() {
     setShowForm(true);
   }
 
-  function duplicateQuote(q: Quote) {
+  async function duplicateQuote(q: Quote) {
+    if (!user) return;
     const copy: Quote = {
       ...q,
       id: newId(),
@@ -224,10 +271,24 @@ export default function PresupuestosPage() {
       state: "draft",
       items: q.items.map((i) => ({ ...i, id: newId() })),
     };
-    setQuotes((prev) => [copy, ...prev]);
+    const quoteRow = {
+      id: copy.id,
+      user_id: user.id,
+      number: copy.number,
+      client_name: copy.clientName,
+      date: copy.date,
+      valid_days: copy.validDays,
+      state: copy.state,
+      notes: copy.notes,
+      amount_total: quoteTotal(copy.items),
+    };
+    const saved = await dbSaveQuote(user.id, quoteRow, copy.items.map(localItemToDb));
+    if (saved) setQuotes((prev) => [dbToLocal(saved), ...prev]);
   }
 
-  function deleteQuote(id: string) {
+  async function deleteQuote(id: string) {
+    if (!user || !confirm("¿Eliminar este presupuesto?")) return;
+    await dbDeleteQuote(id, user.id);
     setQuotes((prev) => prev.filter((q) => q.id !== id));
   }
 
@@ -575,9 +636,10 @@ export default function PresupuestosPage() {
                 </button>
                 <button
                   onClick={saveQuote}
-                  className="text-sm font-semibold bg-[#10B981] hover:bg-[#059669] text-[#080E1A] px-5 py-2 rounded-xl transition-colors"
+                  disabled={saving}
+                  className="text-sm font-semibold bg-[#10B981] hover:bg-[#059669] text-[#080E1A] px-5 py-2 rounded-xl transition-colors disabled:opacity-60"
                 >
-                  Guardar
+                  {saving ? "Guardando…" : "Guardar"}
                 </button>
               </div>
             </div>
