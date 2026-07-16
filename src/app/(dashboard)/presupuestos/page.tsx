@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { useRouter } from "next/navigation";
 import { getProducts } from "@/lib/db/products";
+import { createOrder } from "@/lib/db/orders";
 import {
   getQuotes as dbGetQuotes,
   saveQuote as dbSaveQuote,
@@ -11,6 +13,7 @@ import {
 } from "@/lib/db/quotes";
 import { formatARS } from "@/lib/mock-data";
 import type { Product, QuoteItem as DBQuoteItem } from "@/lib/types/database";
+import { useCompany } from "@/components/company-provider";
 import {
   PlusCircle,
   Search,
@@ -66,6 +69,73 @@ function todayStr() {
 
 function quoteNumber(n: number) {
   return `PPTO-${String(n).padStart(4, "0")}`;
+}
+
+/* ── PDF print ── */
+function generatePrintHTML(q: Quote, companyName: string): string {
+  const fmtARS = (n: number) =>
+    n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+  const rows = q.items
+    .map(
+      (i) => `
+      <tr>
+        <td>${i.name}${i.sku ? ` <span class="sku">${i.sku}</span>` : ""}</td>
+        <td class="num">${i.qty}</td>
+        <td class="num">${fmtARS(i.priceUnit)}</td>
+        <td class="num"><strong>${fmtARS(i.qty * i.priceUnit)}</strong></td>
+      </tr>`
+    )
+    .join("");
+  const total = q.items.reduce((s, i) => s + i.qty * i.priceUnit, 0);
+  const validHasta = new Date(q.date);
+  validHasta.setDate(validHasta.getDate() + q.validDays);
+  const validStr = validHasta.toLocaleDateString("es-AR");
+
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>${q.number}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #111; padding: 40px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+  .company { font-size: 20px; font-weight: 700; color: #059669; }
+  .doc-title { font-size: 24px; font-weight: 800; color: #111; text-align: right; }
+  .doc-number { font-size: 14px; color: #555; text-align: right; margin-top: 2px; }
+  .meta { display: flex; gap: 48px; margin-bottom: 28px; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 14px 0; }
+  .meta-item label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #888; display: block; margin-bottom: 2px; }
+  .meta-item span { font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #555; }
+  th.num, td.num { text-align: right; }
+  td { padding: 9px 10px; border-bottom: 1px solid #f3f4f6; }
+  .sku { font-size: 11px; color: #888; margin-left: 6px; }
+  .total-row { display: flex; justify-content: flex-end; gap: 32px; font-size: 16px; font-weight: 700; padding: 12px 10px; border-top: 2px solid #059669; margin-top: 4px; }
+  .total-label { color: #555; }
+  .total-value { color: #059669; }
+  .notes { margin-top: 28px; font-size: 12px; color: #555; }
+  .notes strong { display: block; margin-bottom: 4px; }
+  .footer { margin-top: 48px; font-size: 11px; color: #aaa; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+  @media print { body { padding: 20px; } }
+</style></head><body>
+<div class="header">
+  <div class="company">${companyName}</div>
+  <div>
+    <div class="doc-title">PRESUPUESTO</div>
+    <div class="doc-number">${q.number}</div>
+  </div>
+</div>
+<div class="meta">
+  <div class="meta-item"><label>Cliente</label><span>${q.clientName || "—"}</span></div>
+  <div class="meta-item"><label>Fecha</label><span>${q.date}</span></div>
+  <div class="meta-item"><label>Válido hasta</label><span>${validStr}</span></div>
+</div>
+<table>
+  <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio unit.</th><th class="num">Subtotal</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="total-row"><span class="total-label">TOTAL</span><span class="total-value">${fmtARS(total)}</span></div>
+${q.notes ? `<div class="notes"><strong>Notas:</strong>${q.notes}</div>` : ""}
+<div class="footer">Documento generado por NETO.APP · ${new Date().toLocaleDateString("es-AR")}</div>
+</body></html>`;
 }
 
 /* ── Conversores DB ↔ local ── */
@@ -135,12 +205,15 @@ const STATE_CONFIG: Record<QuoteState, { label: string; color: string; Icon: Rea
 /* ── Componente principal ── */
 export default function PresupuestosPage() {
   const { user } = useAuth();
+  const { company } = useCompany();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [editing, setEditing] = useState<Quote | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   /* typeahead */
   const [prodSearch, setProdSearch] = useState("");
@@ -290,6 +363,59 @@ export default function PresupuestosPage() {
     if (!user || !confirm("¿Eliminar este presupuesto?")) return;
     await dbDeleteQuote(id, user.id);
     setQuotes((prev) => prev.filter((q) => q.id !== id));
+  }
+
+  function handleExportPDF() {
+    if (!editing) return;
+    const companyName = company?.name ?? "Mi empresa";
+    const win = window.open("", "_blank", "width=860,height=700");
+    if (!win) return;
+    win.document.write(generatePrintHTML(editing, companyName));
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  }
+
+  async function handleConvertirVenta() {
+    if (!editing || !user) return;
+    setConverting(true);
+    const subtotal = quoteTotal(editing.items);
+    const order = await createOrder(
+      {
+        user_id: user.id,
+        partner_id: null,
+        order_number: editing.number.replace("PPTO", "ORD"),
+        date: todayStr(),
+        state: "confirmed",
+        channel: "other",
+        amount_subtotal: subtotal,
+        amount_discount: 0,
+        amount_shipping: 0,
+        amount_tax: 0,
+        amount_total: subtotal,
+        amount_cost: 0,
+        payment_state: "not_paid",
+        notes: `Desde ${editing.number}${editing.clientName ? ` — ${editing.clientName}` : ""}${editing.notes ? `\n${editing.notes}` : ""}`,
+      },
+      editing.items.map((item) => ({
+        user_id: user.id,
+        order_id: "",
+        product_id: item.productId || null,
+        product_name: item.name,
+        qty: item.qty,
+        price_unit: item.priceUnit,
+        discount_pct: 0,
+        cost_unit: 0,
+        price_subtotal: item.qty * item.priceUnit,
+        cost_subtotal: 0,
+      }))
+    );
+    setConverting(false);
+    if (order) {
+      setShowForm(false);
+      setEditing(null);
+      router.push("/ventas");
+    }
   }
 
   const total = editing ? quoteTotal(editing.items) : 0;
@@ -614,16 +740,20 @@ export default function PresupuestosPage() {
             <div className="px-6 py-4 border-t border-white/[0.06] shrink-0 flex items-center justify-between gap-3 bg-[#080E1A]">
               <div className="flex gap-2">
                 <button
+                  onClick={handleExportPDF}
                   className="flex items-center gap-1.5 text-xs text-[#475569] hover:text-[#94A3B8] transition-colors px-3 py-2 rounded-lg hover:bg-white/[0.04] border border-white/[0.06]"
-                  title="Exportar PDF (próximamente)"
                 >
                   <FileDown className="w-3.5 h-3.5" />
                   Exportar PDF
                 </button>
                 {editing.state === "accepted" && (
-                  <button className="flex items-center gap-1.5 text-xs text-[#10B981] hover:text-[#34D399] transition-colors px-3 py-2 rounded-lg hover:bg-[#10B981]/[0.06] border border-[#10B981]/20">
+                  <button
+                    onClick={handleConvertirVenta}
+                    disabled={converting}
+                    className="flex items-center gap-1.5 text-xs text-[#10B981] hover:text-[#34D399] transition-colors px-3 py-2 rounded-lg hover:bg-[#10B981]/[0.06] border border-[#10B981]/20 disabled:opacity-50"
+                  >
                     <ShoppingCart className="w-3.5 h-3.5" />
-                    Convertir en venta
+                    {converting ? "Convirtiendo…" : "Convertir en venta"}
                   </button>
                 )}
               </div>
