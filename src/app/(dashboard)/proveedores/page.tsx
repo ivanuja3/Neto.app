@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { getSuppliers, getPurchases, createSupplier, createPurchaseOrder } from "@/lib/db/purchases";
+import { getSuppliers, getPurchases, createSupplier, createPurchaseOrder, updateSupplier } from "@/lib/db/purchases";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
 import { PlusCircle, AlertTriangle, CheckCircle, Clock, Phone, Mail, ExternalLink } from "lucide-react";
 import { formatARS } from "@/lib/mock-data";
@@ -30,11 +30,29 @@ type Supplier = { id: string; name: string; email: string | null; phone: string 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Purchase = { id: string; partner_id: string | null; purchase_number: string | null; date: string; date_expected: string | null; state: string; amount_total: number; notes: string | null; partner: { name: string } | null };
 
-/* ── Formulario nuevo proveedor ── */
-function FormProveedor({ userId, onSaved, onClose }: { userId: string; onSaved: () => void; onClose: () => void }) {
+/* ── Formulario nuevo/editar proveedor ── */
+function FormProveedor({
+  userId,
+  initial,
+  supplierId,
+  onSaved,
+  onClose,
+}: {
+  userId: string;
+  initial?: { nombre: string; email: string; telefono: string; condicionPago: string; diasEntrega: number };
+  supplierId?: string;
+  onSaved: () => void;
+  onClose: () => void;
+}) {
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState("");
-  const [form, setForm] = useState({ nombre: "", email: "", telefono: "", condicionPago: "Contado", diasEntrega: "7" });
+  const [form, setForm] = useState({
+    nombre:       initial?.nombre       ?? "",
+    email:        initial?.email        ?? "",
+    telefono:     initial?.telefono     ?? "",
+    condicionPago:initial?.condicionPago ?? "Contado",
+    diasEntrega:  String(initial?.diasEntrega ?? 7),
+  });
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function handleSubmit(e: React.FormEvent) {
@@ -42,16 +60,28 @@ function FormProveedor({ userId, onSaved, onClose }: { userId: string; onSaved: 
     if (!form.nombre.trim()) { setError("El nombre es obligatorio"); return; }
     setSaving(true);
     setError("");
-    const { error: dbErr } = await createSupplier({
-      user_id:       userId,
-      name:          form.nombre.trim(),
-      type:          "supplier",
-      email:         form.email.trim()    || null,
-      phone:         form.telefono.trim() || null,
-      payment_terms: form.condicionPago.trim() || null,
-      lead_time:     parseInt(form.diasEntrega) || 7,
-    });
-    if (dbErr) { setError("Error al guardar. Intentá de nuevo."); setSaving(false); return; }
+
+    if (supplierId) {
+      const { error: dbErr } = await updateSupplier(supplierId, userId, {
+        name:          form.nombre.trim(),
+        email:         form.email.trim()    || null,
+        phone:         form.telefono.trim() || null,
+        payment_terms: form.condicionPago.trim() || null,
+        lead_time:     parseInt(form.diasEntrega) || 7,
+      });
+      if (dbErr) { setError("Error al guardar. Intentá de nuevo."); setSaving(false); return; }
+    } else {
+      const { error: dbErr } = await createSupplier({
+        user_id:       userId,
+        name:          form.nombre.trim(),
+        type:          "supplier",
+        email:         form.email.trim()    || null,
+        phone:         form.telefono.trim() || null,
+        payment_terms: form.condicionPago.trim() || null,
+        lead_time:     parseInt(form.diasEntrega) || 7,
+      });
+      if (dbErr) { setError("Error al guardar. Intentá de nuevo."); setSaving(false); return; }
+    }
     onSaved();
     onClose();
   }
@@ -88,7 +118,7 @@ function FormProveedor({ userId, onSaved, onClose }: { userId: string; onSaved: 
         </Field>
       </div>
       {error && <p className="text-xs text-[#EF4444] bg-[#EF4444]/[0.08] border border-[#EF4444]/20 rounded-lg px-3 py-2">{error}</p>}
-      <SaveButton saving={saving} label="Agregar proveedor" />
+      <SaveButton saving={saving} label={supplierId ? "Guardar cambios" : "Agregar proveedor"} />
     </form>
   );
 }
@@ -175,9 +205,10 @@ export default function ProveedoresPage() {
   const [tabProv, setTabProv]       = useState<TabProv>("todos");
   const [tabOC, setTabOC]           = useState<TabOC>("todas");
   const [expandido, setExpandido]   = useState<string | null>(null);
-  const [modalProv, setModalProv]   = useState(false);
-  const [modalOC,   setModalOC]     = useState(false);
-  const [ocProvId,  setOcProvId]    = useState<string | undefined>();
+  const [modalProv,     setModalProv]     = useState(false);
+  const [modalOC,       setModalOC]       = useState(false);
+  const [ocProvId,      setOcProvId]      = useState<string | undefined>();
+  const [editingProv,   setEditingProv]   = useState<{ id: string; nombre: string; email: string; telefono: string; condicionPago: string; diasEntrega: number } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
 
@@ -555,7 +586,10 @@ export default function ProveedoresPage() {
                           Nueva orden de compra
                         </button>
                         <span className="text-white/[0.06]">|</span>
-                        <button className="text-[11px] text-[#475569] hover:text-[#94A3B8] transition-colors">Editar proveedor</button>
+                        <button
+                          onClick={() => setEditingProv({ id: prov.id, nombre: prov.nombre, email: prov.email, telefono: prov.telefono, condicionPago: prov.condicionPago, diasEntrega: prov.diasEntrega })}
+                          className="text-[11px] text-[#475569] hover:text-[#94A3B8] transition-colors"
+                        >Editar proveedor</button>
                       </div>
                     </div>
                   )}
@@ -569,6 +603,19 @@ export default function ProveedoresPage() {
       {/* Modal nuevo proveedor */}
       <Modal open={modalProv} onClose={() => setModalProv(false)} title="Agregar proveedor">
         <FormProveedor userId={user?.id ?? ""} onSaved={refresh} onClose={() => setModalProv(false)} />
+      </Modal>
+
+      {/* Modal editar proveedor */}
+      <Modal open={!!editingProv} onClose={() => setEditingProv(null)} title="Editar proveedor">
+        {editingProv && (
+          <FormProveedor
+            userId={user?.id ?? ""}
+            initial={editingProv}
+            supplierId={editingProv.id}
+            onSaved={refresh}
+            onClose={() => setEditingProv(null)}
+          />
+        )}
       </Modal>
 
       {/* Modal nueva orden de compra */}

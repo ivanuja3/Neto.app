@@ -20,7 +20,7 @@ function mesLabel(yyyymm: string) {
   return MES_LABELS[yyyymm.split("-")[1]] ?? yyyymm;
 }
 
-type AdMetric = { mes: string; gasto: number; ingresos: number; roasReal: number; cpa: number };
+type AdMetric = { mes: string; gasto: number; ingresos: number; roasReal: number };
 type Summary  = { spend: number; revenue: number; roas: number; ctr: number; cpa: number; impressions: number; clicks: number; campaigns: number } | null;
 type PnlRow   = { mes: string; ingresos: number; marketing: number; cm3_pct: number };
 
@@ -45,10 +45,7 @@ export default function AdsPage() {
           const gasto    = Number(r.marketing);
           const ingresos = Number(r.ingresos);
           const roasReal = gasto > 0 ? +(ingresos / gasto).toFixed(2) : 0;
-          const cpa      = ingresos > 0 && gasto > 0
-            ? +(gasto / Math.max(ingresos / 15000, 1)).toFixed(0)
-            : 0;
-          return { mes: mesLabel(r.mes), gasto, ingresos, roasReal, cpa };
+          return { mes: mesLabel(r.mes), gasto, ingresos, roasReal };
         });
         setAdMetrics(metrics);
       } catch (err) {

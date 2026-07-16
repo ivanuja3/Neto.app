@@ -103,3 +103,43 @@ export async function createPurchase(
 
   return { data: typed, error: null };
 }
+
+export async function updateCustomer(id: string, userId: string, data: {
+  name?: string;
+  email?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+}) {
+  return db.from("partners").update(data).eq("id", id).eq("user_id", userId).select().single();
+}
+
+export async function deleteCustomer(id: string, userId: string) {
+  return db.from("partners").delete().eq("id", id).eq("user_id", userId);
+}
+
+export async function updateSupplier(id: string, userId: string, data: {
+  name?: string;
+  email?: string | null;
+  phone?: string | null;
+  payment_terms?: string | null;
+  lead_time?: number;
+  notes?: string | null;
+  active?: boolean;
+}) {
+  return db.from("partners").update(data).eq("id", id).eq("user_id", userId).select().single();
+}
+
+export async function getUnpaidByPartner(userId: string): Promise<Record<string, number>> {
+  const { data } = await db
+    .from("orders")
+    .select("partner_id, amount_total")
+    .eq("user_id", userId)
+    .eq("payment_state", "not_paid")
+    .not("partner_id", "is", null);
+
+  const map: Record<string, number> = {};
+  for (const row of (data ?? []) as { partner_id: string; amount_total: number }[]) {
+    map[row.partner_id] = (map[row.partner_id] ?? 0) + Number(row.amount_total);
+  }
+  return map;
+}

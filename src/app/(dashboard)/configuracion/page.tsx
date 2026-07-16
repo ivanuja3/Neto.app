@@ -224,7 +224,7 @@ function ConfiguracionPageInner() {
   }
 
   async function handleSave() {
-    if (tab === "negocio" && user) {
+    if ((tab === "negocio" || tab === "impuestos") && user) {
       setSaving(true);
       try {
         await updateCompany(user.id, {
@@ -372,31 +372,14 @@ function ConfiguracionPageInner() {
               <h2 className="text-sm font-semibold text-[#F1F5F9] border-b border-white/[0.06] pb-4">Configuración fiscal</h2>
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="CUIT del contribuyente" placeholder="20-12345678-9" value={cuit} onChange={setCuit} />
-                <SelectField
-                  label="Categoría monotributo"
-                  options={["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"].map((l) => ({ label: l, value: l }))}
-                  value="H"
-                />
+                <SelectField label="Condición frente al IVA" options={REGIMENES} value={taxRegime} onChange={setTaxRegime} />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-[#94A3B8] mb-2">Jurisdicciones IIBB (Convenio Multilateral)</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    "Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut",
-                    "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy",
-                    "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquén",
-                    "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz",
-                    "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucumán",
-                  ].map((j) => (
-                    <label key={j} className="flex items-center gap-2 text-xs text-[#94A3B8] cursor-pointer">
-                      <input type="checkbox" defaultChecked={["Córdoba", "Buenos Aires", "Santa Fe"].includes(j)}
-                        className="accent-[#10B981]" />
-                      {j}
-                    </label>
-                  ))}
+              <div className="flex items-start gap-3 bg-[#F59E0B]/[0.06] border border-[#F59E0B]/20 rounded-xl px-4 py-3.5">
+                <div>
+                  <p className="text-xs font-semibold text-[#F59E0B]">Próximamente</p>
+                  <p className="text-xs text-[#94A3B8] mt-0.5">Categoría monotributo, jurisdicciones IIBB y alícuotas por provincia</p>
                 </div>
               </div>
-              <InputField label="Alícuota IIBB Córdoba (%)" value="2.5" type="number" hint="Tasa para comercio electrónico en Córdoba 2026" />
             </>
           )}
 
@@ -411,8 +394,12 @@ function ConfiguracionPageInner() {
                 <Toggle label="Reporte semanal por email" description="Resumen de KPIs enviado todos los lunes" />
                 <Toggle label="Reporte mensual por email" />
               </div>
-              <InputField label="Email para alertas" value="ivan@tuempresa.com" type="email" />
-              <InputField label="Umbral ROAS Real mínimo" value="2.0" type="number" hint="Se envía alerta cuando el ROAS Real cae por debajo de este valor" />
+              <div className="flex items-start gap-3 bg-[#F59E0B]/[0.06] border border-[#F59E0B]/20 rounded-xl px-4 py-3.5">
+                <div>
+                  <p className="text-xs font-semibold text-[#F59E0B]">Próximamente</p>
+                  <p className="text-xs text-[#94A3B8] mt-0.5">La configuración de email y umbrales de alerta se habilita en la próxima actualización</p>
+                </div>
+              </div>
             </>
           )}
 
@@ -469,7 +456,7 @@ function ConfiguracionPageInner() {
           )}
 
           {/* Save button bottom */}
-          {tab !== "plan" && (
+          {tab !== "plan" && tab !== "notificaciones" && (
             <div className="pt-2 border-t border-white/[0.06] flex justify-end">
               <button
                 onClick={handleSave}

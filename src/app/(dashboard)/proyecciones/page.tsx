@@ -44,7 +44,7 @@ function calcProyeccion(ultimoIngreso: number, cm3Base: number, roasBase: number
     const d = new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
     const mes = MONTH_ABBR[d.getMonth()];
     const ingresos = Math.round(ultimoIngreso * Math.pow(1 + tasa, i + 1));
-    const cm3      = parseFloat(Math.min(cm3Base + i * 0.3, 38).toFixed(1));
+    const cm3      = parseFloat(cm3Base.toFixed(1));
     const ganancia = Math.round(ingresos * cm3 / 100);
     const adsSuger = Math.round(ingresos / Math.max(roasBase, 2));
     return { mes, ingresos, cm3, ganancia, adsSuger };
@@ -100,6 +100,7 @@ export default function ProyeccionesPage() {
   const [roasActual,    setRoasActual]    = useState(3);
   const [pnlRows,       setPnlRows]       = useState<PnlRow[]>([]);
   const [escenario,     setEscenario]     = useState<EscenarioKey>("base");
+  const [tasas,         setTasas]         = useState({ conservador: 3, base: 7, optimista: 12 });
   const [metaStr,       setMetaStr]       = useState("");
   const [cuotaPrecio,   setCuotaPrecio]   = useState("50000");
   const [cuotaInflStr,  setCuotaInflStr]  = useState("3");
@@ -134,10 +135,10 @@ export default function ProyeccionesPage() {
     return () => { cancelled = true; };
   }, [user]);
 
-  const cfg        = ESCENARIOS_CONFIG[escenario];
+  const cfg        = { ...ESCENARIOS_CONFIG[escenario], tasa: tasas[escenario] / 100, desc: `crecimiento ${tasas[escenario]}%/mes` };
   const proyeccion = useMemo(
-    () => calcProyeccion(ultimoIngreso, cm3Actual, roasActual, cfg.tasa),
-    [ultimoIngreso, cm3Actual, roasActual, cfg.tasa]
+    () => calcProyeccion(ultimoIngreso, cm3Actual, roasActual, tasas[escenario] / 100),
+    [ultimoIngreso, cm3Actual, roasActual, tasas, escenario]
   );
   const chartData = useMemo(
     () => calcChartCombinado(pnlRows, proyeccion),
@@ -200,10 +201,32 @@ export default function ProyeccionesPage() {
             Escenarios basados en tu historial real de los últimos 6 meses
           </p>
         </div>
-        <div className="flex items-center gap-1 bg-[#0C1424] border border-white/[0.08] rounded-xl p-1 shrink-0">
-          {(["conservador", "base", "optimista"] as EscenarioKey[]).map((e) => (
-            <EscenarioBtn key={e} id={e} active={escenario === e} onClick={() => setEscenario(e)} />
-          ))}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="flex items-center gap-1 bg-[#0C1424] border border-white/[0.08] rounded-xl p-1">
+            {(["conservador", "base", "optimista"] as EscenarioKey[]).map((e) => (
+              <EscenarioBtn key={e} id={e} active={escenario === e} onClick={() => setEscenario(e)} />
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            {(["conservador", "base", "optimista"] as EscenarioKey[]).map((e) => {
+              const c = ESCENARIOS_CONFIG[e];
+              return (
+                <div key={e} className="flex items-center gap-1">
+                  <span className="text-[10px] font-medium" style={{ color: c.color }}>{c.label[0]}</span>
+                  <div className="flex items-center bg-[#080E1A] border border-white/[0.06] rounded px-1.5 py-[3px]">
+                    <input
+                      type="number" min="0" max="50" step="1"
+                      value={tasas[e]}
+                      onChange={(ev) => setTasas((t) => ({ ...t, [e]: Math.max(0, Math.min(50, Number(ev.target.value))) }))}
+                      className="w-7 bg-transparent text-[10px] text-center outline-none tabular-nums"
+                      style={{ color: c.color }}
+                    />
+                    <span className="text-[10px] text-[#475569]">%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
