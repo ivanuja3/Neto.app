@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getProducts, registerStockMove } from "@/lib/db/products";
 import { createOrder } from "@/lib/db/orders";
+import { getCustomers } from "@/lib/db/purchases";
 import { formatARS } from "@/lib/mock-data";
 import type { Product, ProductCategory } from "@/lib/types/database";
 import {
@@ -57,12 +58,27 @@ export default function CajaPage() {
   const [priceMode,  setPriceMode]  = useState<PriceMode>("cash");
   const [metodo,     setMetodo]     = useState("cash");
 
+  /* Clientes */
+  const [clientList,       setClientList]       = useState<{ id: string; name: string }[]>([]);
+  const [partnerId,        setPartnerId]        = useState<string | null>(null);
+  const [partnerSearch,    setPartnerSearch]    = useState("");
+  const [showPartnerDrop,  setShowPartnerDrop]  = useState(false);
+
   /* Checkout */
   const [completing, setCompleting] = useState(false);
   const [success,    setSuccess]    = useState<{ total: number; metodo: string } | null>(null);
   const [efectivo,   setEfectivo]   = useState("");
 
   const searchRef = useRef<HTMLInputElement>(null);
+
+  /* Carga clientes */
+  useEffect(() => {
+    if (!user) return;
+    getCustomers(user.id).then((res) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setClientList((res.data ?? []).map((c: any) => ({ id: c.id, name: c.name })));
+    });
+  }, [user]);
 
   /* Carga de productos */
   useEffect(() => {
@@ -130,10 +146,26 @@ export default function CajaPage() {
     setCart((prev) => prev.filter((i) => i.productId !== productId));
   }
 
+  const filteredClients = clientList
+    .filter((c) => !partnerSearch || c.name.toLowerCase().includes(partnerSearch.toLowerCase()))
+    .slice(0, 6);
+
+  function selectPartner(c: { id: string; name: string }) {
+    setPartnerId(c.id);
+    setPartnerSearch(c.name);
+    setShowPartnerDrop(false);
+  }
+
+  function clearPartner() {
+    setPartnerId(null);
+    setPartnerSearch("");
+  }
+
   function clearCart() {
     setCart([]);
     setSearch("");
     setEfectivo("");
+    clearPartner();
     setTimeout(() => searchRef.current?.focus(), 50);
   }
 
@@ -157,7 +189,7 @@ export default function CajaPage() {
       const order = await createOrder(
         {
           user_id: user.id,
-          partner_id: null,
+          partner_id: partnerId,
           order_number: null,
           date: new Date().toISOString().slice(0, 10),
           state: "delivered",
@@ -422,6 +454,42 @@ export default function CajaPage() {
 
           {/* Checkout */}
           <div className="border-t border-white/[0.06] px-4 pt-3 pb-4 space-y-3 shrink-0">
+            {/* Cliente opcional */}
+            <div className="relative">
+              {partnerId ? (
+                <div className="flex items-center justify-between bg-[#10B981]/[0.08] border border-[#10B981]/20 rounded-lg px-3 py-2">
+                  <span className="text-xs font-medium text-[#10B981] truncate">{partnerSearch}</span>
+                  <button onClick={clearPartner} className="text-[#10B981]/60 hover:text-[#10B981] ml-2 shrink-0 transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    value={partnerSearch}
+                    onChange={(e) => { setPartnerSearch(e.target.value); setShowPartnerDrop(true); }}
+                    onFocus={() => setShowPartnerDrop(true)}
+                    onBlur={() => setTimeout(() => setShowPartnerDrop(false), 150)}
+                    placeholder="Cliente (opcional)"
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-[#F1F5F9] placeholder-[#334155] focus:outline-none focus:border-white/[0.16] transition-colors"
+                  />
+                  {showPartnerDrop && filteredClients.length > 0 && (
+                    <div className="absolute bottom-full mb-1 left-0 right-0 bg-[#0C1424] border border-white/[0.10] rounded-lg overflow-hidden shadow-xl z-20">
+                      {filteredClients.map((c) => (
+                        <button
+                          key={c.id}
+                          onMouseDown={() => selectPartner(c)}
+                          className="w-full text-left px-3 py-2 text-xs text-[#94A3B8] hover:bg-white/[0.06] hover:text-[#F1F5F9] transition-colors"
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Total */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-[#475569]">Total</span>
