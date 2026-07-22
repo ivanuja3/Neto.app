@@ -479,7 +479,13 @@ export default function PresupuestosPage() {
       </div>
 
       {/* Lista */}
-      {quotes.length === 0 ? (
+      {loading ? (
+        <div className="p-6 space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-14 skeleton" />
+          ))}
+        </div>
+      ) : quotes.length === 0 ? (
         <div className="flex items-center justify-between px-5 py-4 bg-[#0C1424] border border-white/[0.06] rounded-xl">
           <p className="text-sm text-[#475569]">Sin presupuestos todavía</p>
           <button onClick={newQuote} className="text-sm font-semibold text-[#10B981] hover:text-[#34D399] transition-colors">

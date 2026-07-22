@@ -173,14 +173,14 @@ export default function ProyeccionesPage() {
   if (loading) {
     return (
       <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
-        <div className="h-8 bg-white/[0.05] rounded w-48" />
-        <div className="h-40 bg-[#10B981]/[0.04] rounded-2xl" />
+        <div className="h-8 skeleton w-48" />
+        <div className="h-40 skeleton rounded-2xl" />
         <div className="grid grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 bg-[#0C1424] border border-white/[0.06] rounded-xl" />
+            <div key={i} className="h-28 skeleton rounded-xl" />
           ))}
         </div>
-        <div className="h-72 bg-[#0C1424] border border-white/[0.06] rounded-xl" />
+        <div className="h-72 skeleton rounded-xl" />
       </div>
     );
   }

@@ -212,7 +212,7 @@ export default function EmpleadosPage() {
   if (loading) return (
     <div className="p-6 space-y-4 max-w-[1200px]">
       {[...Array(3)].map((_, i) => (
-        <div key={i} className="h-14 bg-[#10B981]/[0.04] rounded-xl" />
+        <div key={i} className="h-14 skeleton rounded-xl" />
       ))}
     </div>
   );
