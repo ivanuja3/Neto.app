@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
+import { verifyTnWebhook } from "@/lib/tn-webhook";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
+  const { valid, body: parsed } = await verifyTnWebhook(req);
+  if (!valid) return NextResponse.json({ error: "invalid signature" }, { status: 401 });
+
+  const body = (parsed ?? {}) as { store_id?: string | number };
   const storeId = body?.store_id ? String(body.store_id) : null;
 
   if (storeId) {

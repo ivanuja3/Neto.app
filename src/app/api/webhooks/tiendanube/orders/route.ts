@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
+import { verifyTnWebhook } from "@/lib/tn-webhook";
 
 const TN_UA = "Neto/1.0 (soporte.online.home@gmail.com)";
 
@@ -48,12 +49,10 @@ function resolveProductName(name: TnOrderDetail["products"][0]["name"]): string 
 }
 
 export async function POST(req: NextRequest) {
-  let body: TnWebhookBody;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ ok: false }, { status: 400 });
-  }
+  const { valid, body: parsed } = await verifyTnWebhook(req);
+  if (!valid) return NextResponse.json({ error: "invalid signature" }, { status: 401 });
+  if (!parsed) return NextResponse.json({ ok: false }, { status: 400 });
+  const body = parsed as TnWebhookBody;
 
   // Solo procesar órdenes pagadas
   if (!body.event?.includes("order")) {
