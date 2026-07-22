@@ -2,36 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { X, Gift, MessageCircle } from "lucide-react";
-import { useAuth } from "./auth-provider";
 
-const TOUR_KEY = (uid: string) => `neto_tour_v1_${uid}`;
-const OFFER_KEY = (uid: string) => `neto_guitafix_offer_seen_${uid}`;
+const OFFER_KEY = "neto_landing_guitafix_offer_seen";
 
-function buildWaUrl(email?: string): string {
-  const name = email ? email.split("@")[0].split(/[._\-+]/)[0] : "";
-  const who  = name ? name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() : "";
-  const text = who
-    ? `Hola Iván! Soy ${who}, soy cliente de Guitafix y quiero activar mi cuenta de Neto gratis mientras dure la demo.`
-    : `Hola Iván! Soy cliente de Guitafix y quiero activar mi cuenta de Neto gratis mientras dure la demo.`;
-  return `https://wa.me/5493518551669?text=${encodeURIComponent(text)}`;
-}
+const WA_GUITAFIX = "https://wa.me/5493518551669?text=" + encodeURIComponent(
+  "Hola Iván! Soy cliente de Guitafix y quiero activar mi cuenta de Neto gratis mientras dure la demo."
+);
 
-// Se muestra una sola vez por usuario, después del tour guiado (para no
-// competir con ese modal en el primer login). En usuarios que ya vieron
-// el tour antes de que esto existiera, aparece en su próximo ingreso.
+// Cartel de la landing pública (no dentro de la app) — se muestra una vez
+// por navegador a cualquier visitante que entra a netoapp.vercel.app.
 export function GuitafixOfferModal() {
-  const { user } = useAuth();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    const tourSeen  = !!localStorage.getItem(TOUR_KEY(user.id));
-    const offerSeen = !!localStorage.getItem(OFFER_KEY(user.id));
-    if (tourSeen && !offerSeen) setVisible(true);
-  }, [user]);
+    if (!localStorage.getItem(OFFER_KEY)) {
+      const t = setTimeout(() => setVisible(true), 1200);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   function close() {
-    if (user) localStorage.setItem(OFFER_KEY(user.id), "1");
+    localStorage.setItem(OFFER_KEY, "1");
     setVisible(false);
   }
 
@@ -65,9 +56,10 @@ export function GuitafixOfferModal() {
         </p>
 
         <a
-          href={buildWaUrl(user?.email)}
+          href={WA_GUITAFIX}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={close}
           className="flex items-center justify-center gap-2 mt-5 bg-[#25D366] hover:bg-[#1fb855] active:scale-95 transition-all text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-[0_4px_16px_rgba(37,211,102,0.20)]"
         >
           <MessageCircle className="w-4 h-4" />

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
+import { GuitafixOfferModal } from "@/components/guitafix-offer-modal";
 import {
   BarChart3,
   TrendingUp,
@@ -410,7 +411,9 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen text-[#F1F5F9] page-enter" style={{ background: "#080E1A" }}>
+    <>
+      <GuitafixOfferModal />
+      <div className="min-h-screen text-[#F1F5F9] page-enter" style={{ background: "#080E1A" }}>
       <Nav authed={authed} />
 
       {/* ── Hero ── */}
@@ -832,6 +835,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
