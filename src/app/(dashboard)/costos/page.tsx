@@ -244,6 +244,17 @@ export default function CostosPage() {
   const byTipo    = costos.reduce<Record<string, number>>((acc, c) => { acc[c.tipo] = (acc[c.tipo] ?? 0) + c.valor; return acc; }, {});
   const tipoData  = Object.entries(byTipo).map(([tipo, valor]) => ({ tipo, valor })).sort((a, b) => b.valor - a.valor);
 
+  // Break-even progress
+  const beHoy = new Date();
+  const diasMes = new Date(beHoy.getFullYear(), beHoy.getMonth() + 1, 0).getDate();
+  const diasRestantes = diasMes - beHoy.getDate();
+  const bePct = ventasNecesarias > 0 ? Math.min(Math.round((ingresosMes / ventasNecesarias) * 100), 100) : 0;
+  const beSuperavit = ventasNecesarias > 0 && ingresosMes >= ventasNecesarias;
+  const beFaltante = beSuperavit ? 0 : ventasNecesarias - ingresosMes;
+  const beSuperavitMonto = beSuperavit ? ingresosMes - ventasNecesarias : 0;
+  const beRitmoDiario = diasRestantes > 0 && beFaltante > 0 ? Math.round(beFaltante / diasRestantes) : 0;
+  const beBarColor = beSuperavit ? "#10B981" : bePct >= 80 ? "#F59E0B" : bePct >= 50 ? "#F97316" : "#EF4444";
+
   return (
     <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
       {/* Header */}
@@ -285,6 +296,66 @@ export default function CostosPage() {
           ))
         )}
       </div>
+
+      {/* Progreso al punto de equilibrio */}
+      {!loading && ventasNecesarias > 0 && (
+        <div
+          className="rounded-xl border overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, #0C1424 0%, #080E1A 100%)",
+            borderColor: beSuperavit ? "rgba(16,185,129,0.28)" : "rgba(255,255,255,0.07)",
+            boxShadow: beSuperavit ? "0 0 40px rgba(16,185,129,0.07)" : "none",
+          }}
+        >
+          <div className="px-5 py-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold text-[#475569] uppercase tracking-[0.09em]">
+                  Rentabilidad del mes
+                </p>
+                <p className="text-sm text-[#94A3B8] mt-1 leading-snug">
+                  {beSuperavit
+                    ? `Superaste el punto de equilibrio — generando ${formatARS(Math.round(beSuperavitMonto))} de ganancia neta`
+                    : `Necesitás ${formatARS(Math.round(beFaltante))} más para cubrir todos tus costos`}
+                </p>
+              </div>
+              <div className="text-right shrink-0 ml-6">
+                <span className="text-3xl font-black tabular-nums" style={{ color: beBarColor }}>
+                  {bePct}%
+                </span>
+                <p className="text-[11px] text-[#475569] mt-0.5">cubierto</p>
+              </div>
+            </div>
+
+            {/* Barra */}
+            <div className="h-3 bg-white/[0.05] rounded-full overflow-hidden mb-3">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${bePct}%`,
+                  background: beSuperavit
+                    ? "linear-gradient(90deg, #059669, #10B981, #34D399)"
+                    : `linear-gradient(90deg, ${beBarColor}bb, ${beBarColor})`,
+                }}
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[#64748B] tabular-nums">{formatARS(ingresosMes)} facturados</span>
+              {!beSuperavit && diasRestantes > 0 && beRitmoDiario > 0 && (
+                <span className="font-semibold tabular-nums" style={{ color: beBarColor }}>
+                  Ritmo necesario: {formatARS(beRitmoDiario)}/día · {diasRestantes}d restantes
+                </span>
+              )}
+              {beSuperavit && (
+                <span className="text-[#10B981] font-semibold">En zona de ganancia</span>
+              )}
+              <span className="text-[#475569] tabular-nums">Objetivo: {formatARS(Math.round(ventasNecesarias))}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Alerta punto de equilibrio */}
       {!loading && cmNegativo && (

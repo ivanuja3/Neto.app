@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getKpisCurrentMonth, getPnlMonthly } from "@/lib/db/analytics";
-import { getSalesByChannel, getTopProducts } from "@/lib/db/orders";
+import { getSalesByChannel, getTopProducts, getOrders } from "@/lib/db/orders";
+import type { Order } from "@/lib/types/database";
 import { getCompany } from "@/lib/db/companies";
 import Link from "next/link";
 import { AsesoramientoProfesional } from "@/components/asesoramiento-profesional";
@@ -576,17 +577,20 @@ export default function DashboardPage() {
   const [company,    setCompany]   = useState<{ name: string; industry?: string | null; monthly_goal?: number | null } | null>(null);
   const [monthlyGoal, setMonthlyGoal] = useState<number | null>(null);
   const [loadError,  setLoadError] = useState(false);
+  const [todayStats, setTodayStats] = useState<{ ordenes: number; ingresos: number; ticket: number } | null>(null);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
       try {
-        const [kpiRes, pnlRes, chanRes, topRes, comp] = await Promise.all([
+        const today = new Date().toISOString().split("T")[0];
+        const [kpiRes, pnlRes, chanRes, topRes, comp, todayRes] = await Promise.all([
           getKpisCurrentMonth(user!.id),
           getPnlMonthly(user!.id, 6),
           getSalesByChannel(user!.id, 1),
           getTopProducts(user!.id, 10),
           getCompany(user!.id),
+          getOrders(user!.id, { dateFrom: today, dateTo: today }),
         ]);
         setKpiData(kpiRes.data?.[0] ?? null);
         setPnlData(pnlRes.data ?? []);
@@ -594,6 +598,13 @@ export default function DashboardPage() {
         setTopProds(topRes.data ?? []);
         setCompany(comp ? { name: comp.name ?? "", industry: comp.industry, monthly_goal: comp.monthly_goal } : null);
         setMonthlyGoal(comp?.monthly_goal ?? null);
+        const todayOrds: Order[] = todayRes.data ?? [];
+        const todayIngresos = todayOrds.reduce((s, o) => s + Number(o.amount_total), 0);
+        setTodayStats({
+          ordenes: todayOrds.length,
+          ingresos: todayIngresos,
+          ticket: todayOrds.length > 0 ? Math.round(todayIngresos / todayOrds.length) : 0,
+        });
       } catch (err) {
         console.error("Dashboard load error:", err);
         setLoadError(true);
@@ -735,6 +746,42 @@ export default function DashboardPage() {
 
       {/* Setup checklist — visible hasta completar los 4 pasos */}
       {!loading && !loadError && user && <SetupChecklist steps={setupSteps} userId={user.id} />}
+
+      {/* Hoy en tu negocio */}
+      {!loading && todayStats !== null && (
+        <div className="rounded-xl border border-white/[0.07] bg-[#0C1424] overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.05]">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+              <span className="text-[11px] font-bold text-[#475569] uppercase tracking-[0.09em]">
+                Hoy ·{" "}
+                {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }).replace(/^\w/, (c) => c.toUpperCase())}
+              </span>
+            </div>
+            <Link href="/ventas" className="text-[11px] text-[#334155] hover:text-[#64748B] transition-colors flex items-center gap-1">
+              Ver detalle <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          {todayStats.ordenes === 0 ? (
+            <div className="px-5 py-3 flex items-center gap-2">
+              <span className="text-sm text-[#334155]">Sin ventas registradas hoy todavía</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 divide-x divide-white/[0.05]">
+              {[
+                { label: "Órdenes", value: String(todayStats.ordenes), accent: "#10B981" },
+                { label: "Facturado", value: formatARS(todayStats.ingresos), accent: "#3B82F6" },
+                { label: "Ticket promedio", value: formatARS(todayStats.ticket), accent: "#F59E0B" },
+              ].map((stat) => (
+                <div key={stat.label} className="px-5 py-3">
+                  <p className="text-[11px] text-[#475569] mb-1">{stat.label}</p>
+                  <p className="text-base font-bold tabular-nums" style={{ color: stat.accent }}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPI Grid */}
       {loading ? (

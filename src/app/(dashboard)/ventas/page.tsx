@@ -656,16 +656,19 @@ export default function VentasPage() {
                 description={`${pFrom === pTo ? pFrom : `${pFrom} → ${pTo}`}`} />
             ) : (
               <>
-                <div className="grid grid-cols-5 px-5 py-2.5 bg-white/[0.02] border-b border-white/[0.04]">
-                  {["Fecha", "Canal", "Total", "Cobro", "Método"].map((h) => (
+                <div className="grid grid-cols-6 px-5 py-2.5 bg-white/[0.02] border-b border-white/[0.04]">
+                  {["Fecha", "Canal", "Total", "Margen", "Cobro", "Método"].map((h) => (
                     <p key={h} className="text-[11px] font-semibold text-[#334155] uppercase tracking-wide">{h}</p>
                   ))}
                 </div>
                 {orders.map((o) => {
                   const ps = PAGO_STATE_LABEL[o.payment_state] ?? { label: o.payment_state, color: "text-[#94A3B8] bg-white/[0.06]" };
                   const metodo = METODOS_PAGO.find((m) => m.key === o.payment_method)?.label ?? "—";
+                  const marginPct = Number(o.margin_percent ?? 0);
+                  const marginMonto = Number(o.margin ?? 0);
+                  const marginColor = marginPct >= 25 ? "#10B981" : marginPct >= 10 ? "#F59E0B" : marginPct >= 0 ? "#F97316" : "#EF4444";
                   return (
-                    <div key={o.id} className="grid grid-cols-5 items-center px-5 py-3.5 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02] transition-colors">
+                    <div key={o.id} className="grid grid-cols-6 items-center px-5 py-3.5 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02] transition-colors">
                       <p className="text-[12px] text-[#94A3B8] font-mono">{o.date}</p>
                       <p className="text-[13px] text-[#F1F5F9] capitalize">
                         {CANAL_LABEL[o.channel] ?? o.channel}
@@ -673,6 +676,20 @@ export default function VentasPage() {
                       <p className="text-[13px] font-mono font-semibold text-[#F1F5F9]">
                         {formatARS(Number(o.amount_total))}
                       </p>
+                      <div>
+                        {marginMonto !== 0 || marginPct !== 0 ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[12px] font-mono font-semibold tabular-nums" style={{ color: marginColor }}>
+                              {marginPct.toFixed(1)}%
+                            </span>
+                            <span className="text-[10px] text-[#475569] tabular-nums">
+                              {formatARS(Math.round(marginMonto))}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[12px] text-[#334155]">—</span>
+                        )}
+                      </div>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full w-fit ${ps.color}`}>
                         {ps.label}
                       </span>

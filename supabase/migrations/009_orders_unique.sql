@@ -29,6 +29,13 @@ WHERE channel IS NOT NULL AND order_number IS NOT NULL
     ORDER BY user_id, channel, order_number, created_at ASC
   );
 
-ALTER TABLE orders
-  ADD CONSTRAINT orders_user_channel_number_unique
-  UNIQUE (user_id, channel, order_number);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'orders_user_channel_number_unique'
+  ) THEN
+    ALTER TABLE orders
+      ADD CONSTRAINT orders_user_channel_number_unique
+      UNIQUE (user_id, channel, order_number);
+  END IF;
+END $$;

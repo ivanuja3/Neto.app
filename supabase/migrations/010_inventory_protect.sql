@@ -27,6 +27,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS inventory_levels_readonly ON inventory_levels;
 CREATE TRIGGER inventory_levels_readonly
   BEFORE UPDATE ON inventory_levels
   FOR EACH ROW EXECUTE FUNCTION protect_inventory_columns();
