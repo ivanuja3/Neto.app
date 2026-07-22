@@ -158,8 +158,9 @@ function Nav({ authed }: { authed: boolean }) {
         <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
           <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[#080E1A] font-black text-sm"
             style={{ background: G }}>N</span>
-          <span className="text-[#F1F5F9]">Neto</span>
-          <span style={{ color: G }}>.app</span>
+          <span>
+            <span className="text-[#F1F5F9]">Neto</span><span style={{ color: G }}>.app</span>
+          </span>
         </Link>
 
         {/* Desktop links */}
@@ -816,8 +817,9 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 text-sm font-bold">
             <span className="w-6 h-6 rounded-md flex items-center justify-center text-[#080E1A] font-black text-xs"
               style={{ background: G }}>N</span>
-            <span className="text-[#F1F5F9]">Neto</span>
-            <span style={{ color: G }}>.app</span>
+            <span>
+              <span className="text-[#F1F5F9]">Neto</span><span style={{ color: G }}>.app</span>
+            </span>
             <span className="text-[#334155] font-normal ml-2 text-xs">
               © {new Date().getFullYear()} — Hecho con ♥ en Argentina
             </span>
