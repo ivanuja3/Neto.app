@@ -42,6 +42,7 @@ function planLabel(company: { subscription_status?: string | null; plan?: string
     const p = company.plan;
     if (p === "starter") return "Plan Starter";
     if (p === "pro") return "Plan Pro";
+    if (p === "scale") return "Plan Scale";
     if (p === "enterprise") return "Plan Enterprise";
     return "Plan activo";
   }

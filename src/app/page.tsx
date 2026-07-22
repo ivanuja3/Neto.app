@@ -23,6 +23,16 @@ import {
   Sparkles,
   Rocket,
   Wrench,
+  LayoutDashboard,
+  ShoppingCart,
+  ClipboardList,
+  ScanLine,
+  UserCircle,
+  Truck,
+  LineChart,
+  Megaphone,
+  FileText,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -135,6 +145,7 @@ function Nav({ authed }: { authed: boolean }) {
   const [open, setOpen] = useState(false);
   const links = [
     { label: "Funcionalidades", href: "#features" },
+    { label: "Secciones", href: "#secciones" },
     { label: "Cómo funciona", href: "#como" },
     { label: "Precios", href: "#precios" },
   ];
@@ -285,6 +296,43 @@ export default function LandingPage() {
       title: "Neto IA (beta)",
       desc: "Consultá tus números en lenguaje natural. ¿Qué producto me da más margen? ¿Cuándo voy a quedar sin stock?",
       accent: G,
+    },
+  ];
+
+  const secciones = [
+    {
+      label: "Operaciones",
+      accent: G,
+      items: [
+        { icon: LayoutDashboard, title: "Dashboard", desc: "Panorama del día: ingresos, margen, ROAS y alertas apenas entrás." },
+        { icon: ShoppingCart, title: "Ventas", desc: "Todas tus órdenes de todos los canales, con margen calculado por venta." },
+        { icon: ClipboardList, title: "Presupuestos", desc: "Cotizaciones profesionales que se convierten en venta con un clic." },
+        { icon: ScanLine, title: "Caja / POS", desc: "Cobrá en el local y que quede todo cargado automáticamente." },
+        { icon: Package, title: "Inventario", desc: "Stock, costo promedio ponderado y alertas de reposición en tiempo real." },
+        { icon: Users, title: "Clientes", desc: "Cuenta corriente, historial de compras y quién te debe qué." },
+        { icon: UserCircle, title: "Empleados", desc: "Tu equipo, roles y actividad, todo en un mismo lugar." },
+        { icon: Truck, title: "Proveedores", desc: "Órdenes de compra y cuánto le debés a cada proveedor." },
+      ],
+    },
+    {
+      label: "Análisis",
+      accent: B,
+      items: [
+        { icon: TrendingUp, title: "Márgenes", desc: "Bruto, Operativo y Neto por producto, para saber qué te conviene vender." },
+        { icon: Calculator, title: "Costos", desc: "Fijos y variables, con tu punto de equilibrio calculado solo." },
+        { icon: Wallet, title: "Flujo de caja", desc: "Entra y sale de plata, mes a mes, sin sorpresas de último momento." },
+        { icon: LineChart, title: "Proyecciones", desc: "Hacia dónde va tu negocio si seguís al ritmo actual." },
+      ],
+    },
+    {
+      label: "Crecimiento",
+      accent: "#8B5CF6",
+      items: [
+        { icon: Megaphone, title: "Meta Ads", desc: "ROAS real: cuánto gastás en publicidad versus lo que te vuelve." },
+        { icon: FileText, title: "Impuestos AR", desc: "IIBB por provincia y tu carga fiscal, calculada automáticamente." },
+        { icon: BookOpen, title: "Contabilidad", desc: "Balance General y Libro Mayor, contabilidad de verdad para tu negocio.", badge: "Preview" },
+        { icon: Bot, title: "Neto IA", desc: "Preguntale a tus números en lenguaje natural y te responde al toque.", badge: "Beta" },
+      ],
     },
   ];
 
@@ -524,6 +572,65 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-list">
             {features.map((f) => (
               <FeatureCard key={f.title} {...f} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Secciones de la app ── */}
+      <section id="secciones" className="py-20 px-5 border-t border-white/[0.04]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: "#8B5CF6" }}>
+              Recorré la app
+            </p>
+            <h2 className="text-3xl lg:text-4xl font-black tracking-tight mb-4">
+              Cada sección de Neto, explicada
+            </h2>
+            <p className="text-[16px] text-[#64748B] max-w-xl mx-auto">
+              Así está organizado el dashboard por dentro — las mismas 16 secciones
+              que vas a ver apenas te registrés.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {secciones.map((grupo) => (
+              <div key={grupo.label}
+                className="rounded-2xl border border-white/[0.06] bg-[#0C1424] p-5 card-lift">
+                <p className="text-[11px] font-bold uppercase tracking-widest mb-4"
+                  style={{ color: grupo.accent }}>
+                  {grupo.label}
+                </p>
+                <div className="space-y-4">
+                  {grupo.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.title} className="flex items-start gap-3">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                          style={{ background: `${grupo.accent}18` }}
+                        >
+                          <Icon className="w-4 h-4" style={{ color: grupo.accent }} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[13px] font-semibold text-[#F1F5F9]">{item.title}</p>
+                            {item.badge && (
+                              <span
+                                className="text-[8.5px] font-black uppercase tracking-wider px-1.5 py-[1px] rounded-full shrink-0"
+                                style={{ background: `${grupo.accent}18`, color: grupo.accent }}
+                              >
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[12px] text-[#64748B] leading-snug mt-0.5">{item.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         </div>
