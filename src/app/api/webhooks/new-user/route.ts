@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   try {
     await resend.emails.send({
-      from:    "Neto.app <onboarding@resend.dev>",
+      from:    "Neto.app <noreply@mail.guitafix.online>",
       to:      TO_EMAIL,
       subject: `Nuevo usuario en Neto.app: ${nombre}`,
       html: `
