@@ -43,10 +43,19 @@ const coeficientesCM = [
   { jurisdiccion: "Resto del país", coef_ing: 0.08, coef_gas: 0.09, alicuota: 2.5 },
 ];
 
+// IIBB Convenio Multilateral: base = ingresos × promedio(coef. ingresos, coef.
+// gastos), igual que la pestaña "Convenio Multilateral" más abajo. Antes acá
+// se usaba solo coef_ing, dando un monto distinto al de esa otra pestaña
+// para la misma obligación del mismo período.
+function iibbCM(ingresos: number, j: (typeof coeficientesCM)[number]): number {
+  const base = ingresos * ((j.coef_ing + j.coef_gas) / 2);
+  return Math.round(base * (j.alicuota / 100));
+}
+
 /* Obligaciones del calendario fiscal — referencia estática, montos estimados sobre ingresos reales */
 function buildObligaciones(ingresos: number): ObligacionFiscal[] {
   const ivaEst   = Math.round(ingresos * 0.105); // ~21% IVA sobre ~50% base imponible estimada
-  const iibbCba  = Math.round(ingresos * 0.45 * 0.025);
+  const iibbCba  = iibbCM(ingresos, coeficientesCM[0]); // Córdoba
   const ganancias = Math.round(ingresos * 0.045);
   return [
     {
@@ -76,7 +85,7 @@ function buildObligaciones(ingresos: number): ObligacionFiscal[] {
     {
       id: 5, nombre: "IIBB — CM Buenos Aires", organismo: "SIFERE WEB",
       periodo: "Mayo 2026", vencimiento: "18/06/2026",
-      monto: Math.round(ingresos * 0.22 * 0.03), estado: "vencido",
+      monto: iibbCM(ingresos, coeficientesCM[1]), estado: "vencido", // Buenos Aires
       descripcion: "Alícuota comercio: 3% sobre ingresos atribuibles a BA según coeficientes CM.",
     },
     {
@@ -189,9 +198,9 @@ export default function ImpuestosPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {loading ? Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
-            <div className="h-3.5 bg-white/[0.07] rounded w-28 mb-3" />
-            <div className="h-7 bg-white/[0.07] rounded w-32 mb-2" />
+          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+            <div className="h-3.5 skeleton w-28 mb-3" />
+            <div className="h-7 skeleton w-32 mb-2" />
             <div className="h-3 bg-white/[0.05] rounded w-20" />
           </div>
         )) : (
@@ -230,7 +239,7 @@ export default function ImpuestosPage() {
           loading ? (
             <div className="divide-y divide-white/[0.04]">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+                <div key={i} className="flex items-center gap-4 px-5 py-4">
                   <div className="w-4 h-4 rounded-full bg-white/[0.06] shrink-0" />
                   <div className="flex-1 space-y-2">
                     <div className="h-3.5 bg-white/[0.06] rounded w-48" />
@@ -288,7 +297,7 @@ export default function ImpuestosPage() {
             </div>
 
             {loading ? (
-              <div className="h-[160px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+              <div className="h-[160px] bg-[#10B981]/[0.04] rounded-lg" />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -347,7 +356,7 @@ export default function ImpuestosPage() {
             {/* Ventas para facturar */}
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+                <div key={i} className="flex items-center gap-4 px-5 py-4">
                   <div className="w-32 h-3.5 bg-white/[0.06] rounded" />
                   <div className="flex-1 h-3.5 bg-white/[0.04] rounded" />
                   <div className="w-24 h-3.5 bg-white/[0.06] rounded" />

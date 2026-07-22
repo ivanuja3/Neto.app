@@ -82,7 +82,9 @@ const CAT_LABEL: Record<string, string> = {
 function dateAgo(days: number) {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString().split("T")[0];
+  // toISOString() convierte a UTC — entre las 21:00 y 23:59 hora Argentina
+  // (UTC-3) ya cae en el día siguiente, corriendo el rango "últimos N días".
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export default function FlujoPage() {
@@ -215,9 +217,9 @@ export default function FlujoPage() {
           {/* KPIs */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {loading ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
+              <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
                 <div className="h-5 bg-white/[0.06] rounded w-32 mb-4" />
-                <div className="h-8 bg-white/[0.07] rounded w-40 mb-2" />
+                <div className="h-8 skeleton w-40 mb-2" />
                 <div className="h-3 bg-white/[0.05] rounded w-24" />
               </div>
             )) : (
@@ -283,7 +285,7 @@ export default function FlujoPage() {
             <h2 className="text-sm font-semibold text-[#F1F5F9] mb-1">Entradas vs Salidas — últimos 6 meses</h2>
             <p className="text-xs text-[#475569] mb-5">Verde = entradas · Rojo = salidas</p>
             {loading ? (
-              <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+              <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg" />
             ) : (
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -358,7 +360,7 @@ export default function FlujoPage() {
             {loading ? (
               <div className="divide-y divide-white/[0.04]">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-3.5 animate-pulse">
+                  <div key={i} className="flex items-center gap-3 px-5 py-3.5">
                     <div className="w-8 h-8 rounded-lg bg-white/[0.05] shrink-0" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-3.5 bg-white/[0.06] rounded w-40" />

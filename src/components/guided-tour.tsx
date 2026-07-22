@@ -1,12 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, LayoutDashboard, ShoppingCart, TrendingUp, Megaphone, ArrowRight, Sparkles } from "lucide-react";
+import { X, LayoutDashboard, ShoppingCart, TrendingUp, Megaphone, ArrowRight, Sparkles, MessageCircle } from "lucide-react";
 import { useAuth } from "./auth-provider";
 
 const TOUR_KEY = (uid: string) => `neto_tour_v1_${uid}`;
 
-const STEPS = [
+type Step = {
+  icon: React.ElementType;
+  accent: string;
+  title: string;
+  desc: string;
+  hint: string | null;
+  waButton?: boolean;
+};
+
+const STEPS: Step[] = [
   {
     icon: Sparkles,
     accent: "#10B981",
@@ -46,10 +55,22 @@ const STEPS = [
     icon: Sparkles,
     accent: "#10B981",
     title: "¡Listo para arrancar!",
-    desc: "Completá los 4 pasos del checklist en el dashboard y tus métricas empiezan a aparecer solas. Cualquier duda, Neto IA te ayuda.",
+    desc: "Completá los 4 pasos del checklist en el dashboard y tus métricas empiezan a aparecer solas. Y si necesitás ayuda para configurar tu cuenta, escribile a Iván directamente.",
     hint: null,
+    waButton: true,
   },
 ];
+
+const WELCOME_KEY = (uid: string) => `neto_welcomed_${uid}`;
+
+function buildWaUrl(email?: string): string {
+  const name = email ? email.split("@")[0].split(/[._\-+]/)[0] : "";
+  const who  = name ? name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() : "";
+  const text = who
+    ? `Hola Iván! Soy ${who}, acabo de entrar a Neto.app y quiero configurar mi cuenta.`
+    : `Hola Iván! Acabo de entrar a Neto.app y quiero configurar mi cuenta.`;
+  return `https://wa.me/5493518551669?text=${encodeURIComponent(text)}`;
+}
 
 export function GuidedTour() {
   const { user } = useAuth();
@@ -64,7 +85,10 @@ export function GuidedTour() {
   }, [user]);
 
   function close() {
-    if (user) localStorage.setItem(TOUR_KEY(user.id), "1");
+    if (user) {
+      localStorage.setItem(TOUR_KEY(user.id), "1");
+      localStorage.setItem(WELCOME_KEY(user.id), "1");
+    }
     setVisible(false);
   }
 
@@ -131,8 +155,20 @@ export function GuidedTour() {
           </p>
         )}
 
+        {current.waButton && (
+          <a
+            href={buildWaUrl(user?.email)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 mt-4 bg-[#25D366] hover:bg-[#1fb855] active:scale-95 transition-all text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-[0_4px_16px_rgba(37,211,102,0.20)]"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Escribirle a Iván por WhatsApp
+          </a>
+        )}
+
         {/* Actions */}
-        <div className="flex items-center justify-between mt-7">
+        <div className="flex items-center justify-between mt-6">
           <button
             onClick={close}
             className="text-xs text-[#475569] hover:text-[#94A3B8] transition-colors"

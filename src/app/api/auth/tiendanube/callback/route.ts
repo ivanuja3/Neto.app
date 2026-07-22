@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
+import { verifyState } from "@/lib/tn-oauth-state";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -11,11 +12,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${appUrl}/configuracion?error=tn_missing_params`);
   }
 
-  let userId: string;
-  try {
-    userId = Buffer.from(state, "base64url").toString();
-    if (!userId || userId.length < 10) throw new Error("invalid");
-  } catch {
+  // El state solo es válido si lo firmó nuestro propio /connect después de
+  // verificar la sesión real — evita que alguien arme el link a mano con el
+  // uid de otra cuenta (ver Daily/2026-07-22 para el detalle del hallazgo).
+  const userId = verifyState(state);
+  if (!userId) {
     return NextResponse.redirect(`${appUrl}/configuracion?error=tn_invalid_state`);
   }
 

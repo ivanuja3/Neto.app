@@ -33,7 +33,7 @@ type AppData = {
 
 /* ── SKELETON ────────────────────────────────────────────── */
 function Sk({ h = "h-4", w = "w-full" }: { h?: string; w?: string }) {
-  return <div className={`${h} ${w} bg-white/[0.06] rounded animate-pulse`} />;
+  return <div className={`${h} ${w} bg-white/[0.06] rounded`} />;
 }
 
 /* ── BALANCE GENERAL ─────────────────────────────────────── */
@@ -190,6 +190,14 @@ function LibroMayor({ data, loading }: { data: AppData | null; loading: boolean 
         haber: l.amount < 0 ? Math.abs(l.amount) : 0,
       })),
     };
+    // El saldo corrido de la tabla se acumula recorriendo movs en orden —
+    // pero las fuentes (getOrders/getPurchases/getAnalyticLines) llegan
+    // ordenadas por fecha DESCENDENTE. Sin este sort, el saldo de cada fila
+    // queda mezclado (el total del footer da bien porque la suma no
+    // depende del orden, pero cada saldo intermedio por fila es incorrecto).
+    for (const c of [ventas, proveedores, movGenerales]) {
+      c.movs.sort((a, b) => a.fecha.localeCompare(b.fecha));
+    }
     return [ventas, proveedores, movGenerales].filter((c) => c.movs.length > 0);
   }, [data]);
 
@@ -317,9 +325,17 @@ function EstadoResultados({ data, loading }: { data: AppData | null; loading: bo
   const base    = d.ingresos;
   const pct     = (v: number) => base > 0 ? (v / base) * 100 : 0;
 
+  // En "ytd" (acumulado), d.gastos_fijos es la SUMA de hasta pnl.length
+  // meses del P&L — pero `expenses` solo tiene el costo fijo mensual
+  // ACTUAL, sin historial. Sin escalar por la cantidad de meses, el
+  // renglón "+N gastos más" y las filas individuales no reconciliaban con
+  // el Resultado Neto (que sí es acumulado). Se asume el costo fijo
+  // aproximadamente constante en el período, ya que no hay un histórico
+  // de gastos por mes para hacerlo exacto.
+  const numMeses = periodo === "ytd" ? Math.max(1, pnl.length) : 1;
   const fixedExps = expenses.filter((e) => e.type === "fixed").map((e) => ({
     nombre: e.name,
-    valor: e.frequency === "monthly" ? e.amount : e.frequency === "quarterly" ? e.amount / 3 : e.amount / 12,
+    valor: (e.frequency === "monthly" ? e.amount : e.frequency === "quarterly" ? e.amount / 3 : e.amount / 12) * numMeses,
   }));
 
   const periodoLabel = periodo === "mes"

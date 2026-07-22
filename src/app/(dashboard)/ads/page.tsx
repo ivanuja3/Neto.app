@@ -99,7 +99,7 @@ export default function AdsPage() {
             className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.10] transition-colors cursor-default">
             <p className="text-sm text-[#94A3B8]">{m.label}</p>
             {loading ? (
-              <div className="mt-3 h-7 bg-white/[0.07] rounded w-28 animate-pulse" />
+              <div className="mt-3 h-7 skeleton w-28" />
             ) : (
               <p className="text-[1.6rem] font-bold tabular-nums mt-3 leading-none tracking-tight" style={{ color: m.color }}>
                 {m.value}
@@ -123,7 +123,7 @@ export default function AdsPage() {
           </div>
         </div>
         {loading ? (
-          <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+          <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg" />
         ) : adMetrics.length === 0 ? (
           <div className="h-[220px] flex items-center justify-center text-sm text-[#475569]">Sin datos de campañas</div>
         ) : (
@@ -154,7 +154,7 @@ export default function AdsPage() {
         <div className="divide-y divide-white/[0.04]">
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-start gap-4 px-5 py-4 animate-pulse">
+              <div key={i} className="flex items-start gap-4 px-5 py-4">
                 <div className="w-7 h-7 rounded-lg bg-white/[0.06]" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3.5 bg-white/[0.06] rounded w-48" />

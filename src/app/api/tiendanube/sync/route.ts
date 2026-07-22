@@ -127,26 +127,33 @@ export async function POST(req: NextRequest) {
 
       const { data: newOrder, error: oErr } = await (db as ReturnType<typeof adminClient>)
         .from("orders" as never)
-        .insert({
-          user_id:        user.id,
-          order_number:   orderNum,
-          date:           orderDate,
-          channel:        "tiendanube",
-          state:          mapOrderState(tnOrder.status),
-          amount_subtotal: subtotal,
-          amount_discount: discount,
-          amount_shipping: shipping,
-          amount_tax:     0,
-          amount_total:   total,
-          amount_cost:    0,
-          payment_state:  mapPaymentState(tnOrder.payment_status),
-          partner_id:     null,
-          notes:          `TN #${tnOrder.id}`,
-        })
+        .upsert(
+          {
+            user_id:        user.id,
+            order_number:   orderNum,
+            date:           orderDate,
+            channel:        "tiendanube",
+            state:          mapOrderState(tnOrder.status),
+            amount_subtotal: subtotal,
+            amount_discount: discount,
+            amount_shipping: shipping,
+            amount_tax:     0,
+            amount_total:   total,
+            amount_cost:    0,
+            payment_state:  mapPaymentState(tnOrder.payment_status),
+            partner_id:     null,
+            notes:          `TN #${tnOrder.id}`,
+          },
+          { onConflict: "user_id,channel,order_number", ignoreDuplicates: true }
+        )
         .select("id")
-        .single() as unknown as { data: { id: string } | null; error: unknown };
+        .maybeSingle() as unknown as { data: { id: string } | null; error: unknown };
 
-      if (oErr || !newOrder) { errors++; continue; }
+      // ignoreDuplicates + maybeSingle: si ya existía (insertada por un sync
+      // en paralelo), newOrder viene null sin error — se cuenta como skip,
+      // no como error, y no se insertan items sueltos sin orden dueña.
+      if (oErr) { errors++; continue; }
+      if (!newOrder) { skipped++; existingNums.add(orderNum); continue; }
 
       // Insertar items
       if (tnOrder.products.length > 0) {

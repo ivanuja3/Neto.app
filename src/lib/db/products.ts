@@ -68,17 +68,25 @@ export async function registerStockMove(move: TablesInsert<"stock_moves">) {
     .select()
     .single();
 
-  if (!error) {
-    await db.rpc("update_inventory_level", {
-      p_user_id:    move.user_id,
-      p_product_id: move.product_id,
-      p_qty:        move.qty,
-      p_cost_unit:  move.cost_unit ?? 0,
-      p_type:       move.type,
-    });
+  if (error) return { data, error };
+
+  const { error: rpcError } = await db.rpc("update_inventory_level", {
+    p_user_id:    move.user_id,
+    p_product_id: move.product_id,
+    p_qty:        move.qty,
+    p_cost_unit:  move.cost_unit ?? 0,
+    p_type:       move.type,
+  });
+
+  // El movimiento ya quedó registrado, pero si el RPC falla el stock
+  // mostrado queda desincronizado del historial — hay que avisarle al
+  // caller en vez de reportar éxito silenciosamente.
+  if (rpcError) {
+    console.error("registerStockMove: update_inventory_level failed", rpcError);
+    return { data, error: rpcError };
   }
 
-  return { data, error };
+  return { data, error: null };
 }
 
 export async function getLowStockProducts(userId: string, threshold = 10) {

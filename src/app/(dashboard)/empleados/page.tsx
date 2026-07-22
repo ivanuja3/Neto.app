@@ -27,7 +27,10 @@ interface Empleado {
 const ROLES: Rol[] = ["Administrador", "Vendedor", "Almacén", "Cajero", "Repartidor", "Otro"];
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  // toISOString() da la fecha en UTC — entre las 21:00 y 23:59 hora
+  // Argentina (UTC-3) ya devuelve el día siguiente.
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /* ─── Conversores DB ↔ local ─── */
@@ -209,7 +212,7 @@ export default function EmpleadosPage() {
   if (loading) return (
     <div className="p-6 space-y-4 max-w-[1200px]">
       {[...Array(3)].map((_, i) => (
-        <div key={i} className="h-14 bg-[#10B981]/[0.04] rounded-xl animate-pulse" />
+        <div key={i} className="h-14 bg-[#10B981]/[0.04] rounded-xl" />
       ))}
     </div>
   );

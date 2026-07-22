@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getProducts, getRecentStockMoves, getProductCategories, createProduct, updateProduct, registerStockMove } from "@/lib/db/products";
-import { getTopProducts } from "@/lib/db/orders";
+import { getRecentSalesQty } from "@/lib/db/orders";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PlusCircle, AlertTriangle, ArrowUp, ArrowDown, Package, Pencil, Upload, Search, X, TrendingUp } from "lucide-react";
@@ -293,7 +293,7 @@ export default function InventarioPage() {
         const [prodRes, moveRes, topRes] = await Promise.all([
           getProducts(user!.id),
           getRecentStockMoves(user!.id, 12),
-          getTopProducts(user!.id, 100),
+          getRecentSalesQty(user!.id, 30),
         ]);
         setProducts(prodRes.data ?? []);
         setMoves(moveRes.data   ?? []);
@@ -316,8 +316,11 @@ export default function InventarioPage() {
     const inv     = p.stock?.[0];
     const stock   = Number(inv?.qty_on_hand ?? 0);
     const cost    = Number(inv?.avg_cost ?? p.standard_cost ?? 0);
-    const minimo  = stock > 0 ? Math.round(stock * 0.15) : 0;
-    const vendido = qtyVendida[p.id] ?? 0;
+    const vendido = qtyVendida[p.id] ?? 0; // unidades vendidas en los últimos 30 días
+    // Punto de reposición: demanda diaria (a partir de la venta real de los
+    // últimos 30 días) × 7 días de anticipación. Antes era 15% del propio
+    // stock actual, lo cual es matemáticamente imposible de disparar.
+    const minimo  = vendido > 0 ? Math.max(1, Math.ceil((vendido / 30) * 7)) : 0;
     const cobertura = vendido > 0 ? Math.round((stock / vendido) * 30) : 999;
     return {
       id:            p.id,
@@ -422,10 +425,10 @@ export default function InventarioPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {loading ? Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
-            <div className="h-3.5 bg-white/[0.07] rounded w-24 mb-3" />
-            <div className="h-7 bg-white/[0.07] rounded w-28 mb-2" />
-            <div className="h-3 bg-white/[0.07] rounded w-20" />
+          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+            <div className="h-3.5 skeleton w-24 mb-3" />
+            <div className="h-7 skeleton w-28 mb-2" />
+            <div className="h-3 skeleton w-20" />
           </div>
         )) : (
           [
@@ -464,7 +467,7 @@ export default function InventarioPage() {
         <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
           <h2 className="text-sm font-semibold text-[#F1F5F9] mb-4">Valor por categoría</h2>
           {loading ? (
-            <div className="h-[180px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+            <div className="h-[180px] bg-[#10B981]/[0.04] rounded-lg" />
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={catData} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
@@ -490,7 +493,7 @@ export default function InventarioPage() {
           {loading ? (
             <div className="divide-y divide-white/[0.04]">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-5 py-3 animate-pulse">
+                <div key={i} className="flex items-center gap-3 px-5 py-3">
                   <div className="w-7 h-7 rounded-lg bg-white/[0.05]" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-3.5 bg-white/[0.06] rounded w-32" />
@@ -604,7 +607,7 @@ export default function InventarioPage() {
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-white/[0.04]">
                     {Array.from({ length: 8 }).map((__, j) => (
-                      <td key={j} className="px-5 py-3.5"><div className="h-4 bg-white/[0.06] rounded animate-pulse" /></td>
+                      <td key={j} className="px-5 py-3.5"><div className="h-4 bg-white/[0.06] rounded" /></td>
                     ))}
                   </tr>
                 ))

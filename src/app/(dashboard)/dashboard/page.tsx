@@ -7,7 +7,6 @@ import { getSalesByChannel, getTopProducts } from "@/lib/db/orders";
 import { getCompany } from "@/lib/db/companies";
 import Link from "next/link";
 import { AsesoramientoProfesional } from "@/components/asesoramiento-profesional";
-import { WelcomeModal } from "@/components/welcome-modal";
 import {
   TrendingUp,
   TrendingDown,
@@ -89,10 +88,10 @@ type TopProductRow = {
 /* ─── Skeleton ─── */
 function SkeletonCard() {
   return (
-    <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
-      <div className="h-3.5 bg-white/[0.07] rounded w-24 mb-4" />
-      <div className="h-7 bg-white/[0.07] rounded w-32 mb-3" />
-      <div className="h-3 bg-white/[0.07] rounded w-20" />
+    <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+      <div className="h-3.5 skeleton w-24 mb-4" />
+      <div className="h-7 skeleton w-32 mb-3" />
+      <div className="h-3 skeleton w-20" />
     </div>
   );
 }
@@ -252,7 +251,7 @@ function SaludNegocio({ cm3, roas, costosPct }: { cm3: number; roas: number; cos
   const GlobalIcon = globalColor === "verde" ? CheckCircle2 : globalColor === "amarillo" ? AlertTriangle : XCircle;
 
   return (
-    <div className="bg-[#0C1424] border rounded-xl p-5 hover:border-white/[0.10] transition-colors"
+    <div className="bg-[#0C1424] border rounded-xl p-5 card-lift"
       style={{ borderColor: `${gs.color}30` }}>
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
@@ -350,7 +349,7 @@ function MetaMes({
             <div>
               <p className="text-sm font-bold text-[#F1F5F9] tracking-wide uppercase" style={{ fontSize: "11px", letterSpacing: "0.08em" }}>Meta del mes</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
                 <span className="text-[10px] text-[#10B981] font-semibold uppercase tracking-wider">Live</span>
               </div>
             </div>
@@ -427,10 +426,13 @@ type SetupStep = {
 };
 
 const STEP_ACCENTS = ["#F97316", "#3B82F6", "#10B981", "#8B5CF6"];
+const CHECKLIST_KEY = (uid: string) => `neto_checklist_dismissed_${uid}`;
 
-function SetupChecklist({ steps }: { steps: SetupStep[] }) {
+function SetupChecklist({ steps, userId }: { steps: SetupStep[]; userId: string }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() =>
+    !!localStorage.getItem(CHECKLIST_KEY(userId))
+  );
 
   const done  = steps.filter((s) => s.done).length;
   const total = steps.length;
@@ -470,7 +472,10 @@ function SetupChecklist({ steps }: { steps: SetupStep[] }) {
               : <ChevronUp   className="w-4 h-4 text-[#94A3B8]" />}
           </button>
           <button
-            onClick={() => setDismissed(true)}
+            onClick={() => {
+              localStorage.setItem(CHECKLIST_KEY(userId), "1");
+              setDismissed(true);
+            }}
             className="w-7 h-7 rounded-lg bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4 text-[#94A3B8]" />
@@ -685,15 +690,6 @@ export default function DashboardPage() {
   /* ── Render ── */
   return (
     <div className="p-6 pb-12 space-y-6 max-w-[1400px]">
-      {/* Modal de bienvenida — solo primer login */}
-      {user && !loading && (
-        <WelcomeModal
-          userId={user.id}
-          email={user.email ?? undefined}
-          businessName={company?.name ?? undefined}
-        />
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -713,7 +709,7 @@ export default function DashboardPage() {
             <option>Últimos 3 meses</option>
             <option>Este año</option>
           </select>
-          <button className="hidden sm:block text-sm bg-[#10B981] text-[#080E1A] font-semibold px-4 py-1.5 rounded-lg hover:bg-[#0D9268] active:scale-95 transition-all whitespace-nowrap">
+          <button className="hidden sm:block text-sm bg-[#10B981] text-[#080E1A] font-semibold px-4 py-1.5 rounded-lg hover:bg-[#0D9268] whitespace-nowrap btn-neto">
             Exportar PDF
           </button>
         </div>
@@ -738,7 +734,7 @@ export default function DashboardPage() {
       )}
 
       {/* Setup checklist — visible hasta completar los 4 pasos */}
-      {!loading && !loadError && <SetupChecklist steps={setupSteps} />}
+      {!loading && !loadError && user && <SetupChecklist steps={setupSteps} userId={user.id} />}
 
       {/* KPI Grid */}
       {loading ? (
@@ -763,7 +759,7 @@ export default function DashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Ingresos vs CM3 */}
-        <div className="lg:col-span-2 bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.10] transition-colors">
+        <div className="lg:col-span-2 bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 card-lift">
           <div className="flex items-start justify-between mb-5">
             <div>
               <h2 className="text-sm font-semibold text-[#F1F5F9]">Ingresos y Margen Neto</h2>
@@ -780,7 +776,7 @@ export default function DashboardPage() {
             </div>
           </div>
           {loading ? (
-            <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+            <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg" />
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={ingresosPorMes} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
@@ -799,12 +795,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Ventas por canal */}
-        <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.10] transition-colors">
+        <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 card-lift">
           <div className="mb-5">
             <h2 className="text-sm font-semibold text-[#F1F5F9]">Ventas por canal</h2>
           </div>
           {loading ? (
-            <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+            <div className="h-[220px] bg-[#10B981]/[0.04] rounded-lg" />
           ) : ventasPorCanal.length === 0 ? (
             <div className="h-[220px] flex items-center justify-center text-xs text-[#475569]">Sin datos de canal este mes</div>
           ) : (
@@ -827,7 +823,7 @@ export default function DashboardPage() {
       </div>
 
       {/* SKU Table */}
-      <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl hover:border-white/[0.10] transition-colors">
+      <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl card-lift">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05]">
           <div>
             <h2 className="text-sm font-semibold text-[#F1F5F9]">Performance por SKU</h2>
@@ -840,7 +836,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="p-5 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 bg-[#10B981]/[0.04] rounded animate-pulse" />
+              <div key={i} className="h-10 bg-[#10B981]/[0.04] rounded" />
             ))}
           </div>
         ) : skus.length === 0 ? (

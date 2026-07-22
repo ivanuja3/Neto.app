@@ -174,7 +174,7 @@ function SkeletonRow() {
   return (
     <tr className="border-b border-white/[0.04]">
       {Array.from({ length: 5 }).map((_, i) => (
-        <td key={i} className="px-5 py-3.5"><div className="h-4 bg-white/[0.06] rounded animate-pulse" /></td>
+        <td key={i} className="px-5 py-3.5"><div className="h-4 bg-white/[0.06] rounded" /></td>
       ))}
     </tr>
   );
@@ -264,10 +264,10 @@ export default function CostosPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {loading ? Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
-            <div className="h-3.5 bg-white/[0.07] rounded w-20 mb-3" />
-            <div className="h-7 bg-white/[0.07] rounded w-28 mb-2" />
-            <div className="h-3 bg-white/[0.07] rounded w-16" />
+          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+            <div className="h-3.5 skeleton w-20 mb-3" />
+            <div className="h-7 skeleton w-28 mb-2" />
+            <div className="h-3 skeleton w-16" />
           </div>
         )) : (
           [
@@ -317,7 +317,7 @@ export default function CostosPage() {
           <h2 className="text-sm font-semibold text-[#F1F5F9] mb-5">Estructura de costos</h2>
           {loading ? (
             <div className="space-y-4">
-              {[1, 2].map((i) => <div key={i} className="h-8 bg-white/[0.04] rounded animate-pulse" />)}
+              {[1, 2].map((i) => <div key={i} className="h-8 bg-white/[0.04] rounded" />)}
             </div>
           ) : (
             <div className="space-y-3">
@@ -345,7 +345,7 @@ export default function CostosPage() {
         <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
           <h2 className="text-sm font-semibold text-[#F1F5F9] mb-4">Costos por categoría</h2>
           {loading ? (
-            <div className="h-[180px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+            <div className="h-[180px] bg-[#10B981]/[0.04] rounded-lg" />
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={tipoData} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>

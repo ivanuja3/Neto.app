@@ -46,10 +46,10 @@ function mesLabel(yyyymm: string) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
-      <div className="h-4 bg-white/[0.07] rounded w-16 mb-4" />
-      <div className="h-8 bg-white/[0.07] rounded w-32 mb-2" />
-      <div className="h-5 bg-white/[0.07] rounded w-16 mb-3" />
+    <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+      <div className="h-4 skeleton w-16 mb-4" />
+      <div className="h-8 skeleton w-32 mb-2" />
+      <div className="h-5 skeleton w-16 mb-3" />
       <div className="h-3 bg-white/[0.05] rounded w-40" />
     </div>
   );
@@ -230,7 +230,7 @@ export default function MargenesPage() {
           {loading ? (
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-6 bg-white/[0.04] rounded animate-pulse" />
+                <div key={i} className="h-6 bg-white/[0.04] rounded" />
               ))}
             </div>
           ) : (
@@ -267,7 +267,7 @@ export default function MargenesPage() {
           <h2 className="text-sm font-semibold text-[#F1F5F9] mb-1">Evolución de márgenes</h2>
           <p className="text-xs text-[#475569] mb-5">Bruto% · Operativo% · Neto% por mes</p>
           {loading ? (
-            <div className="h-[200px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+            <div className="h-[200px] bg-[#10B981]/[0.04] rounded-lg" />
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={trendData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }} barGap={2}>
@@ -313,7 +313,7 @@ export default function MargenesPage() {
         {loading ? (
           <div className="divide-y divide-white/[0.04]">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+              <div key={i} className="flex items-center gap-4 px-5 py-4">
                 <div className="flex-1 space-y-1.5">
                   <div className="h-3.5 bg-white/[0.06] rounded w-36" />
                   <div className="h-2.5 bg-white/[0.04] rounded w-20" />

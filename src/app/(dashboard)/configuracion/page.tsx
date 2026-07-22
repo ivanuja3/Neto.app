@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Check, Store, Globe, FileText, Bell, CreditCard } from "lucide-react";
 import { AsesoramientoProfesional } from "@/components/asesoramiento-profesional";
 import { useAuth } from "@/components/auth-provider";
+import { supabase } from "@/lib/supabase";
 import { signOut } from "@/lib/auth";
 import { getCompany, updateCompany } from "@/lib/db/companies";
 import { getIntegrations, deleteIntegration, type Integration } from "@/lib/db/integrations";
@@ -62,19 +63,38 @@ function SelectField({ label, options, value, onChange }: { label: string; optio
 function Toggle({ label, description, defaultChecked = false }: { label: string; description?: string; defaultChecked?: boolean }) {
   const [on, setOn] = useState(defaultChecked);
   return (
-    <div className="flex items-center justify-between gap-4 py-3.5 border-b border-white/[0.04] last:border-b-0">
-      <div>
-        <p className="text-sm font-medium text-[#F1F5F9]">{label}</p>
-        {description && <p className="text-xs text-[#475569] mt-0.5">{description}</p>}
+    <div className="flex items-center justify-between gap-4 py-3.5 border-b border-white/[0.04] last:border-b-0 group">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-[#E2E8F0] leading-tight">{label}</p>
+        {description && <p className="text-xs text-[#475569] mt-0.5 leading-snug">{description}</p>}
       </div>
       <button
         onClick={() => setOn((v) => !v)}
-        className={`relative w-10 h-5.5 rounded-full transition-colors shrink-0 ${on ? "bg-[#10B981]" : "bg-white/10"}`}
-        style={{ height: "22px" }}
+        role="switch"
+        aria-checked={on}
+        className="relative shrink-0 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/50"
+        style={{
+          width: "42px",
+          height: "24px",
+          background: on
+            ? "linear-gradient(135deg, #10B981, #059669)"
+            : "rgba(255,255,255,0.08)",
+          boxShadow: on
+            ? "0 0 12px rgba(16,185,129,0.35), inset 0 1px 0 rgba(255,255,255,0.15)"
+            : "inset 0 1px 3px rgba(0,0,0,0.3)",
+        }}
       >
         <span
-          className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-transform ${on ? "translate-x-4.5" : ""}`}
-          style={{ width: "18px", height: "18px", transform: on ? "translateX(18px)" : "none" }}
+          className="absolute top-[3px] rounded-full bg-white shadow-md"
+          style={{
+            width: "18px",
+            height: "18px",
+            left: on ? "21px" : "3px",
+            transition: "left 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease",
+            boxShadow: on
+              ? "0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(16,185,129,0.2)"
+              : "0 2px 4px rgba(0,0,0,0.25)",
+          }}
         />
       </button>
     </div>
@@ -211,6 +231,23 @@ function ConfiguracionPageInner() {
   }, [searchParams, loadIntegrations, router]);
 
   const tnConnected = integrations.some((i) => i.channel === "tiendanube");
+
+  async function handleConnectTN() {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
+
+    const res = await fetch("/api/auth/tiendanube/connect", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      setTnToast("error");
+      setTimeout(() => setTnToast(null), 4000);
+      return;
+    }
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+  }
 
   async function handleDisconnectTN() {
     if (!user) return;
@@ -353,7 +390,7 @@ function ConfiguracionPageInner() {
                   nombre="Mi tienda online"
                   plataforma="Tienda Nube"
                   conectado={tnConnected}
-                  onConnect={() => { if (user?.id) window.location.href = `/api/auth/tiendanube/connect?uid=${user.id}`; }}
+                  onConnect={handleConnectTN}
                   onDisconnect={handleDisconnectTN}
                 />
                 <ChannelCard nombre="Perfil MercadoLibre" conectado={false} plataforma="MercadoLibre" comingSoon />

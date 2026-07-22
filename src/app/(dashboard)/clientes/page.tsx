@@ -177,10 +177,10 @@ export default function ClientesPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
-            <div className="h-3.5 bg-white/[0.07] rounded w-24 mb-3" />
-            <div className="h-7 bg-white/[0.07] rounded w-28 mb-2" />
-            <div className="h-3 bg-white/[0.07] rounded w-20" />
+          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+            <div className="h-3.5 skeleton w-24 mb-3" />
+            <div className="h-7 skeleton w-28 mb-2" />
+            <div className="h-3 skeleton w-20" />
           </div>
         )) : (
           [
@@ -220,7 +220,7 @@ export default function ClientesPage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-white/[0.04]">
                     {Array.from({ length: 6 }).map((__, j) => (
-                      <td key={j} className="px-5 py-3.5"><div className="h-4 bg-white/[0.06] rounded animate-pulse" /></td>
+                      <td key={j} className="px-5 py-3.5"><div className="h-4 bg-white/[0.06] rounded" /></td>
                     ))}
                   </tr>
                 ))

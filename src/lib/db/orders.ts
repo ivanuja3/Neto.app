@@ -83,6 +83,12 @@ export async function getTopProducts(userId: string, limit = 10) {
   return db.rpc("get_top_products", { p_user_id: userId, p_limit: limit });
 }
 
+// A diferencia de getTopProducts (histórico total), esta acota por fecha —
+// pensada para calcular umbrales de stock/cobertura sobre una tasa real.
+export async function getRecentSalesQty(userId: string, days = 30) {
+  return db.rpc("get_recent_sales_qty", { p_user_id: userId, p_days: days });
+}
+
 export async function getMonthlySales(userId: string, months = 6) {
   const since = new Date();
   since.setMonth(since.getMonth() - months);

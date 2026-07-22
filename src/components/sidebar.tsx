@@ -31,6 +31,29 @@ import { useCompany } from "./company-provider";
 import { getNavKeys } from "@/lib/rubro-config";
 import { signOut } from "@/lib/auth";
 
+function trialDaysLeft(trialEndsAt: string | null | undefined): number {
+  if (!trialEndsAt) return 0;
+  return Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000));
+}
+
+function planLabel(company: { subscription_status?: string | null; plan?: string | null; trial_ends_at?: string | null } | null): string {
+  if (!company) return "Cargando...";
+  if (company.subscription_status === "active") {
+    const p = company.plan;
+    if (p === "starter") return "Plan Starter";
+    if (p === "pro") return "Plan Pro";
+    if (p === "enterprise") return "Plan Enterprise";
+    return "Plan activo";
+  }
+  if (company.subscription_status === "trialing") {
+    const d = trialDaysLeft(company.trial_ends_at);
+    return d > 0 ? `Trial · ${d} día${d !== 1 ? "s" : ""}` : "Trial vencido";
+  }
+  if (company.subscription_status === "past_due") return "Pago pendiente";
+  if (company.subscription_status === "canceled") return "Suscripción cancelada";
+  return "Sin plan";
+}
+
 const NAV_SECTIONS = [
   {
     label: "Operaciones",
@@ -121,6 +144,9 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
         {NAV_SECTIONS.map((section, si) => (
           <div key={section.label} className={si > 0 ? "mt-5" : ""}>
+            <p className="text-[10px] font-semibold text-[#334155] uppercase tracking-[0.08em] px-3 mb-1.5 select-none">
+              {section.label}
+            </p>
             <div className="space-y-0.5">
               {section.items.filter((item) => enabledKeys.includes(item.key as never)).map((item) => {
                 const Icon = item.icon;
@@ -133,24 +159,32 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
                     href={item.href}
                     onClick={onNavigate}
                     className={cn(
-                      "relative flex items-center gap-2.5 px-3 py-[8px] rounded-lg text-sm transition-colors duration-100 group",
+                      "relative flex items-center gap-2.5 px-3 py-[8px] rounded-lg text-[13px] group",
+                      "transition-all duration-200 ease-out",
                       active
-                        ? "bg-[#10B981]/[0.10] text-[#10B981]"
-                        : "text-[#64748B] hover:bg-white/[0.07] hover:text-[#CBD5E1]"
+                        ? "bg-[#10B981]/[0.11] text-[#10B981] shadow-[inset_0_1px_0_rgba(16,185,129,0.10)]"
+                        : "text-[#5C6B80] hover:bg-white/[0.05] hover:text-[#C4CDD9]"
                     )}
                   >
-                    {active && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[16px] bg-[#10B981] rounded-r-full" />
-                    )}
-                    <Icon className={cn(
-                      "w-[14px] h-[14px] shrink-0",
-                      active ? "text-[#10B981]" : "text-[#475569] group-hover:text-[#64748B]"
-                    )} />
-                    <span className={cn("flex-1 text-[13px] leading-none", active && "font-semibold")}>
+                    {/* Pill indicator — siempre renderizado, anima su tamaño */}
+                    <span
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-[#10B981] nav-pill-active"
+                      style={{
+                        height:  active ? "16px" : "0px",
+                        opacity: active ? 1 : 0,
+                      }}
+                    />
+                    <Icon
+                      className={cn(
+                        "w-[14px] h-[14px] shrink-0 transition-colors duration-200",
+                        active ? "text-[#10B981]" : "text-[#3D4F63] group-hover:text-[#5C6B80]"
+                      )}
+                    />
+                    <span className={cn("flex-1 leading-none transition-all duration-200", active && "font-semibold")}>
                       {item.label}
                     </span>
                     {isIncomplete && !active && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#475569] shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#334155] shrink-0 transition-colors duration-200 group-hover:bg-[#475569]" />
                     )}
                   </Link>
                 );
@@ -167,31 +201,44 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
           href="/configuracion"
           onClick={onNavigate}
           className={cn(
-            "flex items-center gap-2.5 px-3 py-[8px] rounded-lg text-sm transition-colors duration-100 group",
+            "relative flex items-center gap-2.5 px-3 py-[8px] rounded-lg text-[13px] group",
+            "transition-all duration-200 ease-out",
             pathname === "/configuracion"
-              ? "bg-[#10B981]/[0.10] text-[#10B981]"
-              : "text-[#64748B] hover:bg-white/[0.07] hover:text-[#CBD5E1]"
+              ? "bg-[#10B981]/[0.11] text-[#10B981]"
+              : "text-[#5C6B80] hover:bg-white/[0.05] hover:text-[#C4CDD9]"
           )}
         >
-          <Settings className="w-[14px] h-[14px] shrink-0 text-[#475569] group-hover:text-[#64748B]" />
-          <span className="flex-1 text-[13px]">Configuración</span>
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-[#10B981] nav-pill-active"
+            style={{
+              height:  pathname === "/configuracion" ? "16px" : "0px",
+              opacity: pathname === "/configuracion" ? 1 : 0,
+            }}
+          />
+          <Settings className={cn(
+            "w-[14px] h-[14px] shrink-0 transition-colors duration-200",
+            pathname === "/configuracion" ? "text-[#10B981]" : "text-[#3D4F63] group-hover:text-[#5C6B80]"
+          )} />
+          <span className="flex-1 leading-none">Configuración</span>
         </Link>
 
-        <div className="flex items-center gap-2.5 px-3 py-[9px] rounded-xl">
+        <div className="flex items-center gap-2.5 px-3 py-[9px] rounded-xl transition-colors duration-200 hover:bg-white/[0.03] group/user">
           <div className="shrink-0">
-            <div className="w-6 h-6 rounded-md bg-[#111E30] border border-white/[0.08] flex items-center justify-center">
-              <span className="text-[10px] font-bold text-[#64748B]">{initials}</span>
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 border border-[#10B981]/20 flex items-center justify-center shadow-[0_0_12px_rgba(16,185,129,0.12)]">
+              <span className="text-[10px] font-bold text-[#10B981]">{initials}</span>
             </div>
           </div>
           <div className="flex-1 text-left min-w-0">
-            <p className="text-[12px] font-semibold text-[#F1F5F9] truncate leading-tight">
+            <p className="text-[12px] font-semibold text-[#D1D9E0] truncate leading-tight">
               {user?.email?.split("@")[0] ?? "Usuario"}
             </p>
-            <p className="text-[10px] text-[#475569] truncate leading-tight mt-0.5">Plan gratuito</p>
+            <p className="text-[10px] text-[#3D4F63] truncate leading-tight mt-0.5 transition-colors duration-200 group-hover/user:text-[#475569]">
+              {planLabel(company ?? null)}
+            </p>
           </div>
           <button
             onClick={handleSignOut}
-            className="w-6 h-6 flex items-center justify-center rounded-lg text-[#475569] hover:bg-white/[0.06] hover:text-[#EF4444] transition-colors shrink-0"
+            className="w-6 h-6 flex items-center justify-center rounded-lg text-[#334155] hover:bg-[#EF4444]/10 hover:text-[#EF4444] transition-all duration-200 shrink-0 opacity-0 group-hover/user:opacity-100"
             title="Cerrar sesión"
           >
             <LogOut className="w-3.5 h-3.5" />

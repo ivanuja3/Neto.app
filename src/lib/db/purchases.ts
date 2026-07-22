@@ -130,11 +130,15 @@ export async function updateSupplier(id: string, userId: string, data: {
 }
 
 export async function getUnpaidByPartner(userId: string): Promise<Record<string, number>> {
+  // "partial" también cuenta como deuda pendiente — el schema no trackea
+  // cuánto se pagó de un pago parcial, así que hasta que exista esa
+  // columna se cuenta el total (antes se excluía del todo, mostrando $0
+  // de deuda para ventas con pago parcial).
   const { data } = await db
     .from("orders")
     .select("partner_id, amount_total")
     .eq("user_id", userId)
-    .eq("payment_state", "not_paid")
+    .in("payment_state", ["not_paid", "partial"])
     .not("partner_id", "is", null);
 
   const map: Record<string, number> = {};

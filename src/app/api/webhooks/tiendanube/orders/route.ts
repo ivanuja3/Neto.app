@@ -99,45 +99,41 @@ export async function POST(req: NextRequest) {
 
   const orderNum = String(tnOrder.number);
 
-  // Verificar si ya existe
-  const { data: existing } = await (db as ReturnType<typeof adminClient>)
-    .from("orders" as never)
-    .select("id")
-    .eq("user_id", user_id)
-    .eq("channel", "tiendanube")
-    .eq("order_number", orderNum)
-    .maybeSingle() as unknown as { data: { id: string } | null };
-
-  if (existing) return NextResponse.json({ ok: true, skipped: "duplicate" });
-
   const total    = parseFloat(tnOrder.total)    || 0;
   const subtotal = parseFloat(tnOrder.subtotal) || 0;
   const discount = parseFloat(tnOrder.discount) || 0;
   const shipping = parseFloat(tnOrder.shipping?.cost ?? "0") || 0;
   const orderDate = tnOrder.created_at.split("T")[0];
 
+  // upsert con ON CONFLICT DO NOTHING (constraint orders_user_channel_number_unique)
+  // en vez de "leer si existe, después insertar" — ese patrón tiene una
+  // ventana de carrera si el webhook se reintenta o se solapa con un sync manual.
   const { data: newOrder, error } = await (db as ReturnType<typeof adminClient>)
     .from("orders" as never)
-    .insert({
-      user_id,
-      order_number:   orderNum,
-      date:           orderDate,
-      channel:        "tiendanube",
-      state:          mapOrderState(tnOrder.status),
-      amount_subtotal: subtotal,
-      amount_discount: discount,
-      amount_shipping: shipping,
-      amount_tax:     0,
-      amount_total:   total,
-      amount_cost:    0,
-      payment_state:  mapPaymentState(tnOrder.payment_status),
-      partner_id:     null,
-      notes:          `TN #${tnOrder.id}`,
-    })
+    .upsert(
+      {
+        user_id,
+        order_number:   orderNum,
+        date:           orderDate,
+        channel:        "tiendanube",
+        state:          mapOrderState(tnOrder.status),
+        amount_subtotal: subtotal,
+        amount_discount: discount,
+        amount_shipping: shipping,
+        amount_tax:     0,
+        amount_total:   total,
+        amount_cost:    0,
+        payment_state:  mapPaymentState(tnOrder.payment_status),
+        partner_id:     null,
+        notes:          `TN #${tnOrder.id}`,
+      },
+      { onConflict: "user_id,channel,order_number", ignoreDuplicates: true }
+    )
     .select("id")
-    .single() as unknown as { data: { id: string } | null; error: unknown };
+    .maybeSingle() as unknown as { data: { id: string } | null; error: unknown };
 
-  if (error || !newOrder) return NextResponse.json({ ok: false, error: "insert failed" }, { status: 500 });
+  if (error) return NextResponse.json({ ok: false, error: "insert failed" }, { status: 500 });
+  if (!newOrder) return NextResponse.json({ ok: true, skipped: "duplicate" });
 
   if (tnOrder.products.length > 0) {
     const items = tnOrder.products.map((p) => ({

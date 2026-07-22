@@ -7,12 +7,15 @@ import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/m
 import { PlusCircle, AlertTriangle, CheckCircle, Clock, Phone, Mail, ExternalLink } from "lucide-react";
 import { formatARS } from "@/lib/mock-data";
 
-type OcEstado = "pagado" | "pendiente" | "vencido";
+// "recibido" = mercadería recibida/facturada, NO implica que ya se pagó —
+// el schema de purchases no tiene ningún campo que trackee pago real, solo
+// state (draft/confirmed/received/invoiced/cancelled) e invoice_status.
+type OcEstado = "recibido" | "pendiente" | "vencido";
 type TabOC    = "todas" | "pendiente" | "vencido";
 type TabProv  = "todos" | "activo" | "inactivo";
 
 const ocConfig: Record<OcEstado, { label: string; color: string; icon: React.ElementType }> = {
-  pagado:   { label: "Pagado",    color: "#10B981", icon: CheckCircle },
+  recibido: { label: "Recibido",  color: "#10B981", icon: CheckCircle },
   pendiente:{ label: "Pendiente", color: "#F59E0B", icon: Clock },
   vencido:  { label: "Vencido",   color: "#EF4444", icon: AlertTriangle },
 };
@@ -192,7 +195,7 @@ function FormOC({ userId, suppliers, defaultSupplierId, onSaved, onClose }: {
 }
 
 function purchaseEstado(p: Purchase): OcEstado {
-  if (p.state === "received" || p.state === "invoiced") return "pagado";
+  if (p.state === "received" || p.state === "invoiced") return "recibido";
   if (p.date_expected && new Date(p.date_expected) < new Date() && p.state !== "cancelled") return "vencido";
   return "pendiente";
 }
@@ -237,12 +240,16 @@ export default function ProveedoresPage() {
   }, [user, refreshKey]);
 
   /* ── Derived data ── */
-  // saldoPendiente per supplier = sum of non-received purchases
+  // saldoPendiente per supplier = todo lo no cancelado. "received"/"invoiced"
+  // significan que llegó/se facturó la mercadería, no que ya se pagó — como
+  // no hay ningún campo de pago real en el schema, lo tratamos como deuda
+  // vigente hasta que exista tracking de pagos (antes se excluía acá,
+  // subestimando cuánto se le debe realmente a cada proveedor).
   const saldoMap: Record<string, number> = {};
   const ultimoPedidoMap: Record<string, string> = {};
   for (const p of purchases) {
     if (!p.partner_id) continue;
-    if (p.state !== "received" && p.state !== "invoiced" && p.state !== "cancelled") {
+    if (p.state !== "cancelled") {
       saldoMap[p.partner_id] = (saldoMap[p.partner_id] ?? 0) + Number(p.amount_total);
     }
     const cur = ultimoPedidoMap[p.partner_id];
@@ -329,10 +336,10 @@ export default function ProveedoresPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {loading ? Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
-            <div className="h-3.5 bg-white/[0.07] rounded w-24 mb-3" />
-            <div className="h-7 bg-white/[0.07] rounded w-28 mb-2" />
-            <div className="h-3 bg-white/[0.07] rounded w-20" />
+          <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+            <div className="h-3.5 skeleton w-24 mb-3" />
+            <div className="h-7 skeleton w-28 mb-2" />
+            <div className="h-3 skeleton w-20" />
           </div>
         )) : (
           [
@@ -401,7 +408,7 @@ export default function ProveedoresPage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-white/[0.04]">
                     {Array.from({ length: 7 }).map((__, j) => (
-                      <td key={j} className="px-5 py-3.5"><div className="h-4 bg-white/[0.06] rounded animate-pulse" /></td>
+                      <td key={j} className="px-5 py-3.5"><div className="h-4 bg-white/[0.06] rounded" /></td>
                     ))}
                   </tr>
                 ))
@@ -438,7 +445,7 @@ export default function ProveedoresPage() {
         <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/[0.06] bg-white/[0.02]">
           <span className="text-sm font-semibold text-[#94A3B8]">{ocFiltradas.length} órdenes</span>
           <span className="text-sm font-mono font-bold text-[#F1F5F9]">
-            {formatARS(ocFiltradas.filter((oc) => oc.estado !== "pagado").reduce((s, oc) => s + oc.monto, 0))}{" "}
+            {formatARS(ocFiltradas.filter((oc) => oc.estado !== "recibido").reduce((s, oc) => s + oc.monto, 0))}{" "}
             <span className="text-[#475569] font-normal">pendiente de pago</span>
           </span>
         </div>
@@ -463,7 +470,7 @@ export default function ProveedoresPage() {
         {loading ? (
           <div className="divide-y divide-white/[0.04]">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+              <div key={i} className="flex items-center gap-4 px-5 py-4">
                 <div className="w-9 h-9 rounded-xl bg-white/[0.06]" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3.5 bg-white/[0.06] rounded w-36" />

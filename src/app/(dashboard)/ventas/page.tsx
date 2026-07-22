@@ -644,7 +644,7 @@ export default function VentasPage() {
             {histLoading ? (
               <div className="divide-y divide-white/[0.04]">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+                  <div key={i} className="flex items-center gap-4 px-5 py-4">
                     <div className="w-20 h-3.5 bg-white/[0.06] rounded" />
                     <div className="flex-1 h-3.5 bg-white/[0.04] rounded" />
                     <div className="w-24 h-3.5 bg-white/[0.06] rounded" />
@@ -689,9 +689,9 @@ export default function VentasPage() {
       {tab === "resumen" && loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5 animate-pulse">
-              <div className="h-3.5 bg-white/[0.07] rounded w-24 mb-4" />
-              <div className="h-7 bg-white/[0.07] rounded w-28" />
+            <div key={i} className="bg-[#0C1424] border border-white/[0.06] rounded-xl p-5">
+              <div className="h-3.5 skeleton w-24 mb-4" />
+              <div className="h-7 skeleton w-28" />
             </div>
           ))}
         </div>
@@ -731,7 +731,7 @@ export default function VentasPage() {
           <h2 className="text-sm font-semibold text-[#F1F5F9]">Evolución de ingresos</h2>
         </div>
         {loading ? (
-          <div className="h-[240px] bg-[#10B981]/[0.04] rounded-lg animate-pulse" />
+          <div className="h-[240px] bg-[#10B981]/[0.04] rounded-lg" />
         ) : (
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={ingresosPorMes} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
@@ -765,7 +765,7 @@ export default function VentasPage() {
         {loading ? (
           <div className="divide-y divide-white/[0.04]">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+              <div key={i} className="flex items-center gap-4 px-5 py-4">
                 <div className="w-5 h-3 bg-white/[0.06] rounded" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3.5 bg-white/[0.06] rounded w-40" />

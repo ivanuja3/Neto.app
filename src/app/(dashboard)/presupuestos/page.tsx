@@ -64,11 +64,28 @@ function newId() {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  // toISOString() da la fecha en UTC — entre las 21:00 y 23:59 hora
+  // Argentina (UTC-3) ya devuelve el día siguiente. getFullYear/Month/Date
+  // son locales.
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function quoteNumber(n: number) {
   return `PPTO-${String(n).padStart(4, "0")}`;
+}
+
+// Basar el próximo número en quotes.length duplicaba números tras borrar un
+// presupuesto (ej: se borra PPTO-0002 de 3 → length pasa a 2 → el próximo
+// nuevo vuelve a numerarse PPTO-0003, ya existente). Se toma el máximo
+// número ya usado en vez del conteo.
+function nextQuoteNumber(quotes: Quote[]): number {
+  let max = 0;
+  for (const q of quotes) {
+    const n = parseInt(q.number.replace(/\D/g, ""), 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  return max + 1;
 }
 
 /* ── PDF print ── */
@@ -87,8 +104,12 @@ function generatePrintHTML(q: Quote, companyName: string): string {
     )
     .join("");
   const total = q.items.reduce((s, i) => s + i.qty * i.priceUnit, 0);
-  const validHasta = new Date(q.date);
-  validHasta.setDate(validHasta.getDate() + q.validDays);
+  // new Date("YYYY-MM-DD") parsea como medianoche UTC; sumarle días y
+  // formatear en horario local (Argentina, UTC-3) corría el resultado un
+  // día para atrás. Construir con Y/M/D explícitos usa horario local desde
+  // el arranque, y pasar day+validDays deja que Date normalice el mes/año.
+  const [vy, vm, vd] = q.date.split("-").map(Number);
+  const validHasta = new Date(vy, vm - 1, vd + q.validDays);
   const validStr = validHasta.toLocaleDateString("es-AR");
 
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
@@ -245,7 +266,7 @@ export default function PresupuestosPage() {
   function newQuote() {
     const q: Quote = {
       id: newId(),
-      number: quoteNumber(quotes.length + 1),
+      number: quoteNumber(nextQuoteNumber(quotes)),
       clientName: "",
       date: todayStr(),
       validDays: 10,
@@ -339,7 +360,7 @@ export default function PresupuestosPage() {
     const copy: Quote = {
       ...q,
       id: newId(),
-      number: quoteNumber(quotes.length + 1),
+      number: quoteNumber(nextQuoteNumber(quotes)),
       date: todayStr(),
       state: "draft",
       items: q.items.map((i) => ({ ...i, id: newId() })),

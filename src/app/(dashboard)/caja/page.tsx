@@ -348,7 +348,7 @@ export default function CajaPage() {
             {loading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="bg-white/[0.04] rounded-xl h-24 animate-pulse" />
+                  <div key={i} className="bg-white/[0.04] rounded-xl h-24" />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
