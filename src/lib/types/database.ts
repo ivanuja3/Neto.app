@@ -23,6 +23,10 @@ export interface Database {
           tax_regime: string | null;
           industry: string | null;
           monthly_goal: number | null;
+          plan: "trial" | "starter" | "pro" | "enterprise" | null;
+          subscription_status: "trialing" | "active" | "past_due" | "canceled" | null;
+          trial_ends_at: string | null;
+          plan_activated_at: string | null;
           created_at: string;
           updated_at: string;
         };
