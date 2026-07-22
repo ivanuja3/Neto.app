@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/sidebar";
 import { AuthGuard } from "@/components/auth-guard";
 import { GuidedTour } from "@/components/guided-tour";
+import { GuitafixOfferModal } from "@/components/guitafix-offer-modal";
 import { CompanyProvider } from "@/components/company-provider";
 import { TrialBanner } from "@/components/trial-banner";
 import { PageTransition } from "@/components/page-transition";
@@ -30,6 +31,7 @@ export default function DashboardLayout({
             <PageTransition>{children}</PageTransition>
           </main>
           <GuidedTour />
+          <GuitafixOfferModal />
         </div>
       </CompanyProvider>
     </AuthGuard>

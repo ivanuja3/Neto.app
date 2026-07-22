@@ -331,7 +331,7 @@ export default function LandingPage() {
         { icon: Megaphone, title: "Meta Ads", desc: "ROAS real: cuánto gastás en publicidad versus lo que te vuelve." },
         { icon: FileText, title: "Impuestos AR", desc: "IIBB por provincia y tu carga fiscal, calculada automáticamente." },
         { icon: BookOpen, title: "Contabilidad", desc: "Balance General y Libro Mayor, contabilidad de verdad para tu negocio.", badge: "Preview" },
-        { icon: Bot, title: "Neto IA", desc: "Preguntale a tus números en lenguaje natural y te responde al toque.", badge: "Beta" },
+        { icon: Bot, title: "Neto IA", desc: "Preguntale a tus números en lenguaje natural y obtené respuestas al instante.", badge: "Beta" },
       ],
     },
   ];
