@@ -6,7 +6,7 @@ import { Check, Store, Globe, FileText, Bell, CreditCard } from "lucide-react";
 import { AsesoramientoProfesional } from "@/components/asesoramiento-profesional";
 import { useAuth } from "@/components/auth-provider";
 import { supabase } from "@/lib/supabase";
-import { signOut } from "@/lib/auth";
+import { signOut, updatePassword } from "@/lib/auth";
 import { getCompany, updateCompany } from "@/lib/db/companies";
 import { getIntegrations, deleteIntegration, type Integration } from "@/lib/db/integrations";
 import { useCompany } from "@/components/company-provider";
@@ -295,6 +295,36 @@ function ConfiguracionPageInner() {
     window.location.href = "/login";
   }
 
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+
+  async function handleChangePassword() {
+    setPwError("");
+    setPwSuccess(false);
+    if (newPassword.length < 8) {
+      setPwError("La contraseña tiene que tener al menos 8 caracteres");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError("Las contraseñas no coinciden");
+      return;
+    }
+    setPwSaving(true);
+    const { error } = await updatePassword(newPassword);
+    setPwSaving(false);
+    if (error) {
+      setPwError("No se pudo cambiar la contraseña. Probá de nuevo.");
+      return;
+    }
+    setNewPassword("");
+    setConfirmPassword("");
+    setPwSuccess(true);
+    setTimeout(() => setPwSuccess(false), 4000);
+  }
+
   return (
     <div className="p-6 max-w-[1000px]">
       <div className="flex items-center justify-between mb-6">
@@ -482,6 +512,34 @@ function ConfiguracionPageInner() {
 
               <div className="pt-4 border-t border-white/[0.06]">
                 <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-3">Cuenta</p>
+
+                <div className="max-w-sm space-y-3 mb-5">
+                  <p className="text-sm font-medium text-[#E2E8F0]">Cambiar contraseña</p>
+                  <InputField
+                    label="Nueva contraseña"
+                    type="password"
+                    placeholder="Mín. 8 caracteres"
+                    value={newPassword}
+                    onChange={setNewPassword}
+                  />
+                  <InputField
+                    label="Confirmar contraseña"
+                    type="password"
+                    placeholder="Repetí la contraseña"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                  />
+                  {pwError && <p className="text-xs text-[#EF4444]">{pwError}</p>}
+                  {pwSuccess && <p className="text-xs text-[#10B981]">Contraseña actualizada correctamente</p>}
+                  <button
+                    onClick={handleChangePassword}
+                    disabled={pwSaving || !newPassword || !confirmPassword}
+                    className="text-sm font-semibold px-4 py-2 rounded-lg bg-white/[0.06] text-[#F1F5F9] border border-white/[0.08] hover:bg-white/[0.09] transition-colors disabled:opacity-50"
+                  >
+                    {pwSaving ? "Guardando..." : "Actualizar contraseña"}
+                  </button>
+                </div>
+
                 <button
                   onClick={handleSignOut}
                   className="text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors font-medium"
