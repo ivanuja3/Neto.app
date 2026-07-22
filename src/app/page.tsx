@@ -18,19 +18,24 @@ import {
   Activity,
   Menu,
   X,
+  MessageCircle,
+  Zap,
+  Sparkles,
+  Rocket,
+  Wrench,
 } from "lucide-react";
 import { useState } from "react";
 
 /* ─── Paleta ─── */
 const G = "#10B981"; // verde
-const WA_BETA = "https://wa.me/5493518551669?text=" + encodeURIComponent("Hola Iván! Vi tu historia y me interesa sumarme a la beta de Neto.app.");
 const B = "#3B82F6"; // azul
+const WA_ASESOR = "https://wa.me/5493518551669?text=" + encodeURIComponent("Hola Iván! Tengo una duda sobre Neto.app antes de registrarme.");
 
 /* ─── Hero mockup (mini dashboard) ─── */
 function DashMockup() {
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-white/[0.08]"
+      className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-white/[0.08] card-lift"
       style={{ background: "#0C1424" }}
     >
       {/* Topbar */}
@@ -78,6 +83,7 @@ function DashMockup() {
                 background: i === 6
                   ? `linear-gradient(to top, ${G}, ${G}88)`
                   : `rgba(16,185,129,0.18)`,
+                transition: "height 0.6s var(--ease-out)",
               }} />
             ))}
           </div>
@@ -111,9 +117,9 @@ function FeatureCard({
   accent: string;
 }) {
   return (
-    <div className="group rounded-xl p-5 border border-white/[0.06] bg-[#0C1424] hover:border-white/[0.12] transition-all duration-200">
+    <div className="group rounded-xl p-5 border border-white/[0.06] bg-[#0C1424] card-lift">
       <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
+        className="w-9 h-9 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
         style={{ background: `${accent}18` }}
       >
         <Icon className="w-4.5 h-4.5" style={{ color: accent }} />
@@ -158,7 +164,7 @@ function Nav({ authed }: { authed: boolean }) {
         <div className="hidden md:flex items-center gap-3">
           {authed ? (
             <Link href="/dashboard"
-              className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] transition-colors"
+              className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] transition-colors btn-neto"
               style={{ background: G }}>
               Ir al dashboard <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -168,11 +174,11 @@ function Nav({ authed }: { authed: boolean }) {
                 className="text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors px-3 py-2">
                 Iniciar sesión
               </Link>
-              <a href={WA_BETA} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] transition-colors"
+              <Link href="/signup"
+                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] transition-colors btn-neto"
                 style={{ background: G }}>
-                Solicitar acceso <ChevronRight className="w-3.5 h-3.5" />
-              </a>
+                Empezar gratis <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </>
           )}
         </div>
@@ -206,11 +212,11 @@ function Nav({ authed }: { authed: boolean }) {
                   className="text-center text-sm text-[#94A3B8] border border-white/[0.1] px-4 py-2.5 rounded-lg hover:border-white/[0.2]">
                   Iniciar sesión
                 </Link>
-                <a href={WA_BETA} target="_blank" rel="noopener noreferrer"
+                <Link href="/signup"
                   className="text-center text-sm font-semibold px-4 py-2.5 rounded-lg text-[#080E1A]"
                   style={{ background: G }}>
-                  Solicitar acceso
-                </a>
+                  Empezar gratis
+                </Link>
               </>
             )}
           </div>
@@ -286,7 +292,7 @@ export default function LandingPage() {
     {
       n: "01",
       title: "Registrate en 2 minutos",
-      desc: "Creá tu cuenta, elegí tu rubro y ya tenés acceso completo a todas las funcionalidades.",
+      desc: "Creá tu cuenta, elegí tu rubro y arrancás con 14 días gratis, sin tarjeta.",
     },
     {
       n: "02",
@@ -300,20 +306,63 @@ export default function LandingPage() {
     },
   ];
 
-  const planFeatures = [
-    "Dashboard con KPIs en tiempo real",
-    "Ventas, inventario, clientes y proveedores",
-    "Márgenes: Bruto, Operativo y Neto",
-    "Flujo de caja y proyecciones 6 meses",
-    "Integración con Tienda Nube",
-    "Seguimiento de Meta Ads y ROAS",
-    "Cálculo de IIBB y costos fijos",
-    "Neto IA — preguntas en lenguaje natural",
-    "Soporte por WhatsApp",
+  const plans = [
+    {
+      id: "starter",
+      label: "Starter",
+      price: "$19",
+      period: "USD / mes",
+      desc: "Para negocios en crecimiento",
+      icon: Zap,
+      accent: B,
+      features: [
+        "Hasta 300 órdenes / mes",
+        "Dashboard + KPIs en tiempo real",
+        "Ventas, inventario y clientes",
+        "Costos fijos y flujo de caja",
+        "Impuestos AR",
+        "Soporte por WhatsApp",
+      ],
+    },
+    {
+      id: "pro",
+      label: "Pro",
+      price: "$29",
+      period: "USD / mes",
+      desc: "Para escalar sin límites",
+      icon: Sparkles,
+      accent: G,
+      popular: true,
+      features: [
+        "Órdenes ilimitadas",
+        "Todo lo de Starter",
+        "Meta Ads integrado (ROAS real)",
+        "Proyecciones y márgenes",
+        "Neto IA incluido",
+        "Soporte prioritario",
+      ],
+    },
+    {
+      id: "scale",
+      label: "Scale",
+      price: "$49",
+      period: "USD / mes",
+      desc: "Todo, sin restricciones",
+      icon: Rocket,
+      accent: "#8B5CF6",
+      features: [
+        "Todo lo de Pro",
+        "Contabilidad completa (Balance y Libro Mayor)",
+        "Presupuestos y facturación",
+        "Reportes y exportación avanzada",
+        "Onboarding personalizado con Iván",
+        "Soporte prioritario dedicado",
+      ],
+    },
   ];
 
   return (
-    <div className="min-h-screen text-[#F1F5F9]" style={{ background: "#080E1A" }}>
+    <div className="min-h-screen text-[#F1F5F9] page-enter" style={{ background: "#080E1A" }}>
       <Nav authed={authed} />
 
       {/* ── Hero ── */}
@@ -327,7 +376,7 @@ export default function LandingPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] text-[12px] text-[#94A3B8] mb-6">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: G }} />
-              Beta cerrada — 10 lugares disponibles
+              14 días gratis · sin tarjeta de crédito
             </div>
 
             <h1 className="text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] mb-5">
@@ -345,19 +394,19 @@ export default function LandingPage() {
               {authed ? (
                 <Link
                   href="/dashboard"
-                  className="flex items-center justify-center gap-2 text-[15px] font-bold px-6 py-3.5 rounded-xl text-[#080E1A] hover:opacity-90 transition-opacity"
+                  className="flex items-center justify-center gap-2 text-[15px] font-bold px-6 py-3.5 rounded-xl text-[#080E1A] btn-neto"
                   style={{ background: G }}
                 >
                   Ir al dashboard <ArrowRight className="w-4 h-4" />
                 </Link>
               ) : (
-                <a
-                  href={WA_BETA} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 text-[15px] font-bold px-6 py-3.5 rounded-xl text-[#080E1A] hover:opacity-90 transition-opacity"
+                <Link
+                  href="/signup"
+                  className="flex items-center justify-center gap-2 text-[15px] font-bold px-6 py-3.5 rounded-xl text-[#080E1A] btn-neto"
                   style={{ background: G }}
                 >
-                  Solicitar acceso beta <ArrowRight className="w-4 h-4" />
-                </a>
+                  Empezar gratis <ArrowRight className="w-4 h-4" />
+                </Link>
               )}
               {!authed && (
                 <Link
@@ -370,7 +419,7 @@ export default function LandingPage() {
             </div>
 
             {/* Social proof mini */}
-            <div className="flex items-center gap-4 text-[13px] text-[#475569]">
+            <div className="flex flex-wrap items-center gap-4 text-[13px] text-[#475569]">
               <div className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5" style={{ color: G }} />
                 Sin tarjeta de crédito
@@ -403,7 +452,6 @@ export default function LandingPage() {
             "🏪  Integración con Tienda Nube",
             "📊  Compatible con Meta Ads",
             "🔒  Datos encriptados con Supabase",
-            "⚡  Deploy en Vercel",
           ].map((t) => (
             <span key={t}>{t}</span>
           ))}
@@ -424,7 +472,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-3 gap-5 stagger-list">
             {[
               {
                 emoji: "😤",
@@ -446,7 +494,7 @@ export default function LandingPage() {
               },
             ].map((p) => (
               <div key={p.title}
-                className="rounded-xl p-5 border border-white/[0.06] bg-[#0C1424]">
+                className="rounded-xl p-5 border border-white/[0.06] bg-[#0C1424] card-lift">
                 <span className="text-3xl mb-3 block">{p.emoji}</span>
                 <h3 className="text-[15px] font-semibold text-[#F1F5F9] mb-2">{p.title}</h3>
                 <p className="text-[13px] text-[#64748B] mb-3">{p.desc}</p>
@@ -473,7 +521,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-list">
             {features.map((f) => (
               <FeatureCard key={f.title} {...f} />
             ))}
@@ -521,54 +569,104 @@ export default function LandingPage() {
               Simple. Sin sorpresas.
             </h2>
             <p className="text-[16px] text-[#64748B]">
-              Un solo plan con todo incluido. Sin límites artificiales.
+              14 días gratis en cualquier plan. Cobro manual en ARS al tipo de cambio del día.
             </p>
           </div>
 
-          <div className="max-w-md mx-auto">
-            <div className="relative rounded-2xl border-2 p-8"
-              style={{ borderColor: G, background: "#0C1424" }}>
-              {/* Badge */}
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[12px] font-bold text-[#080E1A]"
-                style={{ background: G }}>
-                Beta cerrada — acceso por invitación
-              </div>
+          <div className="max-w-4xl mx-auto grid sm:grid-cols-3 gap-5">
+            {plans.map((plan) => {
+              const Icon = plan.icon;
+              return (
+                <div
+                  key={plan.id}
+                  className="relative rounded-2xl border p-6 flex flex-col gap-4 card-lift"
+                  style={{
+                    background: plan.popular ? `${plan.accent}07` : "#0C1424",
+                    borderColor: plan.popular ? `${plan.accent}40` : "rgba(255,255,255,0.07)",
+                    boxShadow: plan.popular ? `0 0 32px ${plan.accent}14` : "none",
+                  }}
+                >
+                  {plan.popular && (
+                    <span
+                      className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black uppercase tracking-widest text-[#080E1A]"
+                      style={{ background: plan.accent }}
+                    >
+                      Más elegido
+                    </span>
+                  )}
 
-              <div className="text-center mb-6 pt-2">
-                <p className="text-[13px] text-[#64748B] mb-2">Plan Neto</p>
-                <div className="flex items-end justify-center gap-1.5">
-                  <span className="text-5xl font-black text-[#F1F5F9]">$0</span>
-                  <span className="text-[#64748B] mb-2 text-sm">/ mes en beta</span>
+                  <div className="flex items-center gap-2.5 pt-1">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: `${plan.accent}18` }}
+                    >
+                      <Icon className="w-4.5 h-4.5" style={{ color: plan.accent }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#F1F5F9]">{plan.label}</p>
+                      <p className="text-[11px] text-[#64748B]">{plan.desc}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-end gap-1.5">
+                    <span className="text-4xl font-black text-[#F1F5F9] leading-none">{plan.price}</span>
+                    <span className="text-xs text-[#64748B] mb-1">{plan.period}</span>
+                  </div>
+
+                  <ul className="space-y-2.5 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2.5">
+                        <Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: plan.accent }} />
+                        <span className="text-[13px] text-[#94A3B8]">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href="/signup"
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all btn-neto"
+                    style={
+                      plan.popular
+                        ? { background: plan.accent, color: "#080E1A" }
+                        : { background: "rgba(255,255,255,0.06)", color: "#F1F5F9", border: "1px solid rgba(255,255,255,0.1)" }
+                    }
+                  >
+                    Empezar gratis <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
                 </div>
-                <p className="text-[12px] text-[#475569] mt-1">
-                  Precio de lanzamiento próximamente
-                </p>
-              </div>
-
-              <ul className="space-y-3 mb-8">
-                {planFeatures.map((f) => (
-                  <li key={f} className="flex items-start gap-3">
-                    <Check className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: G }} />
-                    <span className="text-[13px] text-[#94A3B8]">{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {authed ? (
-                <Link href="/dashboard"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-[15px] font-bold text-[#080E1A] hover:opacity-90 transition-opacity"
-                  style={{ background: G }}>
-                  Ir al dashboard <ArrowRight className="w-4 h-4" />
-                </Link>
-              ) : (
-                <a href={WA_BETA} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-[15px] font-bold text-[#080E1A] hover:opacity-90 transition-opacity"
-                  style={{ background: G }}>
-                  Solicitar acceso <ArrowRight className="w-4 h-4" />
-                </a>
-              )}
-            </div>
+              );
+            })}
           </div>
+
+          {/* Desarrollo a medida */}
+          <div className="max-w-4xl mx-auto mt-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 flex items-center gap-4 flex-wrap sm:flex-nowrap card-lift">
+            <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
+              <Wrench className="w-5 h-5 text-[#94A3B8]" />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <p className="text-sm font-bold text-[#F1F5F9]">¿Tu negocio necesita algo distinto?</p>
+              <p className="text-xs text-[#64748B] mt-0.5">
+                Desarrollo a medida para tu negocio — módulos, integraciones o reportes hechos a tu manera.
+              </p>
+            </div>
+            <a
+              href={WA_ASESOR}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold bg-white/[0.06] text-[#F1F5F9] border border-white/[0.08] hover:bg-white/[0.09] transition-colors shrink-0"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Hablar con Iván
+            </a>
+          </div>
+
+          <p className="text-center text-[13px] text-[#475569] mt-6">
+            ¿Tenés dudas antes de arrancar?{" "}
+            <a href={WA_ASESOR} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-semibold hover:opacity-80 transition-opacity" style={{ color: G }}>
+              Hablá con Iván por WhatsApp <MessageCircle className="w-3.5 h-3.5" />
+            </a>
+          </p>
         </div>
       </section>
 
@@ -584,21 +682,20 @@ export default function LandingPage() {
             <span style={{ color: G }}>con números reales</span>
           </h2>
           <p className="text-[17px] text-[#64748B] mb-8 max-w-xl mx-auto">
-            Beta cerrada — 10 lugares para dueños de negocio de distintos rubros.
-            Acceso completamente gratuito durante la beta.
+            14 días gratis, sin tarjeta de crédito. Cancelás cuando quieras.
           </p>
           {authed ? (
             <Link href="/dashboard"
-              className="inline-flex items-center gap-2 text-[16px] font-bold px-8 py-4 rounded-xl text-[#080E1A] hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 text-[16px] font-bold px-8 py-4 rounded-xl text-[#080E1A] btn-neto"
               style={{ background: G }}>
               Ir al dashboard <ArrowRight className="w-4.5 h-4.5" />
             </Link>
           ) : (
-            <a href={WA_BETA} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-[16px] font-bold px-8 py-4 rounded-xl text-[#080E1A] hover:opacity-90 transition-opacity"
+            <Link href="/signup"
+              className="inline-flex items-center gap-2 text-[16px] font-bold px-8 py-4 rounded-xl text-[#080E1A] btn-neto"
               style={{ background: G }}>
-              Solicitar acceso <ArrowRight className="w-4.5 h-4.5" />
-            </a>
+              Empezar gratis <ArrowRight className="w-4.5 h-4.5" />
+            </Link>
           )}
         </div>
       </section>

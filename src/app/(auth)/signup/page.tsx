@@ -10,6 +10,7 @@ import { INDUSTRIAS } from "@/lib/constants";
 const PLANES = [
   { id: "starter", label: "Starter", precio: "$19/mes", limite: "Hasta 300 órdenes/mes" },
   { id: "pro", label: "Pro", precio: "$29/mes", limite: "Órdenes ilimitadas", popular: true },
+  { id: "scale", label: "Scale", precio: "$49/mes", limite: "Todo, sin restricciones" },
 ];
 
 export default function SignupPage() {

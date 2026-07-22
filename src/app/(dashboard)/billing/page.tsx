@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, Check, Clock, Zap, Sparkles } from "lucide-react";
+import { MessageCircle, Check, Clock, Zap, Sparkles, Rocket, Wrench } from "lucide-react";
 import { useCompany } from "@/components/company-provider";
 
 function daysLeft(trialEndsAt: string | null | undefined): number {
@@ -44,13 +44,36 @@ const PLANS = [
       "Soporte prioritario",
     ],
   },
+  {
+    id: "scale",
+    label: "Scale",
+    price: "$49",
+    period: "USD / mes",
+    desc: "Todo, sin restricciones",
+    icon: Rocket,
+    accent: "#8B5CF6",
+    features: [
+      "Todo lo de Pro",
+      "Contabilidad completa (Balance y Libro Mayor)",
+      "Presupuestos y facturación",
+      "Reportes y exportación avanzada",
+      "Onboarding personalizado con Iván",
+      "Soporte prioritario dedicado",
+    ],
+  },
 ];
+
+const PLAN_LABELS: Record<string, string> = { starter: "Starter", pro: "Pro", scale: "Scale" };
 
 function buildWaText(plan: string) {
   return encodeURIComponent(
-    `Hola Iván! Quiero activar el plan ${plan === "pro" ? "Pro" : "Starter"} de Neto.app.`
+    `Hola Iván! Quiero activar el plan ${PLAN_LABELS[plan] ?? plan} de Neto.app.`
   );
 }
+
+const WA_CUSTOM = "https://wa.me/5493518551669?text=" + encodeURIComponent(
+  "Hola Iván! Quiero contarte qué necesito para mi negocio y ver si podemos armar algo a medida en Neto."
+);
 
 export default function BillingPage() {
   const { company } = useCompany();
@@ -63,7 +86,7 @@ export default function BillingPage() {
   const days = daysLeft(company?.trial_ends_at);
 
   return (
-    <div className="p-6 pb-16 max-w-2xl mx-auto">
+    <div className="p-6 pb-16 max-w-4xl mx-auto">
 
       {/* Estado actual */}
       <div className="mb-8">
@@ -128,7 +151,7 @@ export default function BillingPage() {
       </div>
 
       {/* Plan cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         {PLANS.map((plan) => {
           const Icon = plan.icon;
           return (
@@ -203,6 +226,28 @@ export default function BillingPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Desarrollo a medida */}
+      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 flex items-center gap-4 mb-8 flex-wrap sm:flex-nowrap">
+        <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
+          <Wrench className="w-5 h-5 text-[#94A3B8]" />
+        </div>
+        <div className="flex-1 min-w-[200px]">
+          <p className="text-sm font-bold text-[#F1F5F9]">¿Necesitás algo a medida?</p>
+          <p className="text-xs text-[#64748B] mt-0.5">
+            Desarrollo a medida para tu negocio — módulos, integraciones o reportes que Neto todavía no tiene.
+          </p>
+        </div>
+        <a
+          href={WA_CUSTOM}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold bg-white/[0.06] text-[#F1F5F9] border border-white/[0.08] hover:bg-white/[0.09] transition-colors shrink-0"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Hablar con Iván
+        </a>
       </div>
 
       {/* Nota al pie */}
