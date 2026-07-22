@@ -656,7 +656,7 @@ export default function LandingPage() {
               className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold bg-white/[0.06] text-[#F1F5F9] border border-white/[0.08] hover:bg-white/[0.09] transition-colors shrink-0"
             >
               <MessageCircle className="w-4 h-4" />
-              Hablar con Iván
+              Contactar al equipo
             </a>
           </div>
 
