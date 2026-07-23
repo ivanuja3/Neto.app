@@ -22,9 +22,9 @@ const TABS: { id: Escenario; label: string }[] = [
 
 /* Defaults por escenario — todos editables */
 const DEFAULTS: Record<Escenario, Record<string, string>> = {
-  tres_cuotas:    { comisionMP: "9",    ivaComision: "21", cuotaSimple: "10", comisionTN: "2", cpaObjetivoUSD: "7" },
-  sin_cuotas:     { comisionMP: "6.29", ivaComision: "21", comisionTN: "2", cpaObjetivoUSD: "7" },
-  contra_entrega: { cpaObjetivoARS: "4500", pctEntrega: "30" },
+  tres_cuotas:    { comisionMP: "9",    ivaComision: "21", cuotaSimple: "10", comisionTN: "2", cpaObjetivoUSD: "7", impuestos: "3" },
+  sin_cuotas:     { comisionMP: "6.29", ivaComision: "21", comisionTN: "2", cpaObjetivoUSD: "7", impuestos: "3" },
+  contra_entrega: { cpaObjetivoARS: "4500", pctEntrega: "30", impuestos: "3" },
 };
 
 function formatARS(n: number) {
@@ -130,10 +130,15 @@ export default function RecursosPage() {
       const cpaReal     = pctEntrega > 0 ? cpaObjetivo / (pctEntrega / 100) : NaN;
       const gastosBase  = prod + pack + env;
       const ganancia    = pv - gastosBase - cpaReal;
-      const pctGanancia = pv > 0 ? (ganancia / pv) * 100 : NaN;
       const cpaBreakEven = pv - gastosBase;
+      const impuestosPct = Number(campos.impuestos) || 0;
+      const impuestos = pv * (impuestosPct / 100);
+      const gananciaConImpuestos = ganancia - impuestos;
+      const pctGananciaConImpuestos = pv > 0 ? (gananciaConImpuestos / pv) * 100 : NaN;
+      const cpaBreakEvenConImpuestos = cpaBreakEven - impuestos;
       return {
-        pv, prod, pack, env, pctEntrega, cpaReal, ganancia, pctGanancia, cpaBreakEven,
+        pv, prod, pack, env, pctEntrega, cpaReal, impuestos,
+        ganancia: gananciaConImpuestos, pctGanancia: pctGananciaConImpuestos, cpaBreakEven: cpaBreakEvenConImpuestos,
         llegaAMiMP: pv, comisionMP: 0, ivaMP: 0, comisionTN: 0, cuotaSimple: 0, ivaCuota: 0,
         cpaObjetivoARS: cpaObjetivo,
       };
@@ -142,12 +147,14 @@ export default function RecursosPage() {
     const comisionMPpct  = Number(campos.comisionMP) || 0;
     const ivaPct         = Number(campos.ivaComision) || 0;
     const comisionTNpct  = Number(campos.comisionTN) || 0;
+    const impuestosPct   = Number(campos.impuestos) || 0;
     const cpaObjetivoUSD = Number(campos.cpaObjetivoUSD) || 0;
     const cpaObjetivoARS = cpaObjetivoUSD * dolarNum;
 
     const comisionMP = pv * (comisionMPpct / 100);
     const ivaMP       = comisionMP * (ivaPct / 100);
     const comisionTN = pv * (comisionTNpct / 100);
+    const impuestos   = pv * (impuestosPct / 100);
 
     let cuotaSimple = 0, ivaCuota = 0;
     if (tab === "tres_cuotas") {
@@ -156,14 +163,14 @@ export default function RecursosPage() {
       ivaCuota    = cuotaSimple * (ivaPct / 100);
     }
 
-    const llegaAMiMP = pv - comisionMP - ivaMP - cuotaSimple - ivaCuota - comisionTN;
+    const llegaAMiMP = pv - comisionMP - ivaMP - cuotaSimple - ivaCuota - comisionTN - impuestos;
     const gastosBase = prod + pack + env;
     const ganancia   = llegaAMiMP - gastosBase - cpaObjetivoARS;
     const pctGanancia = pv > 0 ? (ganancia / pv) * 100 : NaN;
     const cpaBreakEven = llegaAMiMP - gastosBase;
 
     return {
-      pv, prod, pack, env, comisionMP, ivaMP, comisionTN, cuotaSimple, ivaCuota,
+      pv, prod, pack, env, comisionMP, ivaMP, comisionTN, cuotaSimple, ivaCuota, impuestos,
       llegaAMiMP, cpaObjetivoARS, ganancia, pctGanancia, cpaBreakEven,
       pctEntrega: 0, cpaReal: 0,
     };
@@ -268,21 +275,23 @@ export default function RecursosPage() {
                 {tab !== "contra_entrega" ? (
                   <>
                     <div className="grid grid-cols-2 gap-3">
-                      <Field label="Comisión Mercado Pago" value={campos.comisionMP} onChange={(v) => setCampo("comisionMP", v)} suffix="%" />
+                      <Field label="Comisión pasarela" value={campos.comisionMP} onChange={(v) => setCampo("comisionMP", v)} suffix="%" />
                       <Field label="IVA sobre comisión" value={campos.ivaComision} onChange={(v) => setCampo("ivaComision", v)} suffix="%" />
                     </div>
                     {tab === "tres_cuotas" && (
-                      <Field label="Cuota simple (financiación 3 cuotas)" value={campos.cuotaSimple} onChange={(v) => setCampo("cuotaSimple", v)} suffix="%" />
+                      <Field label="Costo 3 cuotas" value={campos.cuotaSimple} onChange={(v) => setCampo("cuotaSimple", v)} suffix="%" />
                     )}
                     <div className="grid grid-cols-2 gap-3">
-                      <Field label="Comisión Tienda Nube" value={campos.comisionTN} onChange={(v) => setCampo("comisionTN", v)} suffix="%" />
+                      <Field label="Comisión tienda" value={campos.comisionTN} onChange={(v) => setCampo("comisionTN", v)} suffix="%" />
                       <Field label="CPA objetivo (ads)" value={campos.cpaObjetivoUSD} onChange={(v) => setCampo("cpaObjetivoUSD", v)} suffix="USD" />
                     </div>
+                    <Field label="Impuestos" value={campos.impuestos} onChange={(v) => setCampo("impuestos", v)} suffix="%" />
                   </>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="CPA objetivo (Meta)" value={campos.cpaObjetivoARS} onChange={(v) => setCampo("cpaObjetivoARS", v)} suffix="ARS" />
                     <Field label="% de entrega estimado" value={campos.pctEntrega} onChange={(v) => setCampo("pctEntrega", v)} suffix="%" />
+                    <Field label="Impuestos" value={campos.impuestos} onChange={(v) => setCampo("impuestos", v)} suffix="%" />
                   </div>
                 )}
               </div>
@@ -321,16 +330,17 @@ export default function RecursosPage() {
               {tab !== "contra_entrega" ? (
                 <>
                   <LineaResultado label="Precio de venta" ars={r.pv} usd={toUSD(r.pv)} />
-                  <LineaResultado label="Comisión Mercado Pago" ars={r.comisionMP} usd={toUSD(r.comisionMP)} negativo />
+                  <LineaResultado label="Comisión pasarela" ars={r.comisionMP} usd={toUSD(r.comisionMP)} negativo />
                   <LineaResultado label="IVA sobre comisión" ars={r.ivaMP} usd={toUSD(r.ivaMP)} negativo />
                   {tab === "tres_cuotas" && (
                     <>
-                      <LineaResultado label="Cuota simple" ars={r.cuotaSimple} usd={toUSD(r.cuotaSimple)} negativo />
-                      <LineaResultado label="IVA sobre cuota simple" ars={r.ivaCuota} usd={toUSD(r.ivaCuota)} negativo />
+                      <LineaResultado label="Costo 3 cuotas" ars={r.cuotaSimple} usd={toUSD(r.cuotaSimple)} negativo />
+                      <LineaResultado label="IVA sobre costo 3 cuotas" ars={r.ivaCuota} usd={toUSD(r.ivaCuota)} negativo />
                     </>
                   )}
-                  <LineaResultado label="Comisión Tienda Nube" ars={r.comisionTN} usd={toUSD(r.comisionTN)} negativo />
-                  <LineaResultado label="Llega a mi Mercado Pago" ars={r.llegaAMiMP} usd={toUSD(r.llegaAMiMP)} destacado />
+                  <LineaResultado label="Comisión tienda" ars={r.comisionTN} usd={toUSD(r.comisionTN)} negativo />
+                  <LineaResultado label="Impuestos" ars={r.impuestos} usd={toUSD(r.impuestos)} negativo />
+                  <LineaResultado label="Llega a mi cuenta" ars={r.llegaAMiMP} usd={toUSD(r.llegaAMiMP)} destacado />
                   <LineaResultado label="Producto + packaging + envío" ars={r.prod + r.pack + r.env} usd={toUSD(r.prod + r.pack + r.env)} negativo />
                   <LineaResultado label="CPA objetivo (ads)" ars={r.cpaObjetivoARS} usd={toUSD(r.cpaObjetivoARS)} negativo />
                 </>
@@ -339,9 +349,25 @@ export default function RecursosPage() {
                   <LineaResultado label="Precio de venta" ars={r.pv} usd={toUSD(r.pv)} />
                   <LineaResultado label="Producto + packaging + envío" ars={r.prod + r.pack + r.env} usd={toUSD(r.prod + r.pack + r.env)} negativo />
                   <LineaResultado label="CPA real estimado (objetivo ÷ % entrega)" ars={r.cpaReal} usd={toUSD(r.cpaReal)} negativo />
+                  <LineaResultado label="Impuestos" ars={r.impuestos} usd={toUSD(r.impuestos)} negativo />
                 </>
               )}
               <LineaResultado label="CPA break even (máximo posible)" ars={r.cpaBreakEven} usd={toUSD(r.cpaBreakEven)} destacado />
+              <div className="flex items-center justify-between py-2 border-t border-[rgba(var(--neto-line-rgb),0.08)] mt-1 pt-3">
+                <span className="text-xs font-bold text-[var(--neto-text)]">Ganancia real por producto</span>
+                <div className="text-right">
+                  <p className="text-sm font-mono font-bold" style={{ color: esNegativo ? R : G }}>
+                    {esNegativo ? "-" : ""}{formatARS(Math.abs(r.ganancia))}
+                  </p>
+                  <p className="text-[10px] font-mono text-[var(--neto-text4)]">{formatUSD(toUSD(Math.abs(r.ganancia)))}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-xs font-bold text-[var(--neto-text)]">Porcentaje de ganancia</span>
+                <span className="text-sm font-mono font-bold" style={{ color: esNegativo ? R : G }}>
+                  {isFinite(r.pctGanancia) ? `${r.pctGanancia.toFixed(1)}%` : "—"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -352,7 +378,6 @@ export default function RecursosPage() {
           <div className="text-xs text-[var(--neto-text3)] leading-relaxed space-y-1.5">
             <p><span className="font-semibold text-[var(--neto-text2)]">CPA (Costo por Adquisición):</span> lo que invertís en publicidad para generar una venta.</p>
             <p><span className="font-semibold text-[var(--neto-text2)]">CPA Break Even:</span> el máximo que podés invertir en ads por venta sin ganar ni perder plata.</p>
-            <p><span className="font-semibold text-[var(--neto-text2)]">% de ganancia:</span> en ecommerce suele estar sano entre 10% y 30% sobre el precio de venta.</p>
           </div>
         </div>
 
