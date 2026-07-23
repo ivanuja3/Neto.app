@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
-  ArrowRight, ArrowLeft, ArrowUpRight, Calculator, CreditCard, Megaphone, Sun, Moon,
+  ArrowRight, ArrowLeft, ArrowUpRight, Calculator, CreditCard, Layers, Megaphone, Sun, Moon,
 } from "lucide-react";
 
 const G = "#10B981";
@@ -26,6 +26,14 @@ const HERRAMIENTAS = [
     accent: B,
     title: "Calculadora de comisiones Posnet",
     desc: "El error más común al fijar precios en un local físico: no restar la comisión de la tarjeta. Compará cómo lo hace la mayoría vs. cómo hacerlo bien.",
+  },
+  {
+    href: "/recursos/costos-y-precios",
+    external: false,
+    icon: Layers,
+    accent: "#F59E0B",
+    title: "Cómo calcular bien tus costos y precios",
+    desc: "Armá el costo real de tu producto, entendé la diferencia entre marcación de costo y margen de ganancia, y chequeá tu punto de equilibrio.",
   },
   {
     href: "https://calculadora-breakeven-ads.netlify.app/",
