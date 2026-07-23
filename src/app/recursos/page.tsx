@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useMemo } from "react";
-import { Calculator, ArrowRight, ArrowLeft, Tag, TrendingUp, Percent, ShieldAlert } from "lucide-react";
+import { Calculator, ArrowRight, ArrowLeft, ArrowUpRight, Tag, TrendingUp, Percent, ShieldAlert, Megaphone } from "lucide-react";
 
 const G = "#10B981";
 const B = "#3B82F6";
@@ -182,6 +182,33 @@ export default function RecursosPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+
+        {/* Más recursos */}
+        <div className="mt-10">
+          <h2 className="text-sm font-bold text-[#F1F5F9] mb-4">Más herramientas gratis</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <a
+              href="https://calculadora-breakeven-ads.netlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group rounded-xl p-5 border border-white/[0.06] bg-[#0C1424] card-lift flex items-start gap-4"
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${B}18` }}>
+                <Megaphone className="w-5 h-5" style={{ color: B }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-semibold text-[#F1F5F9]">Calculadora Break Even — Meta Ads</p>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#475569] group-hover:text-[#94A3B8] transition-colors shrink-0" />
+                </div>
+                <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
+                  CPA máximo, ROAS objetivo y escenarios de rentabilidad por campaña — cuánto podés gastar en ads
+                  sin perder plata.
+                </p>
+              </div>
+            </a>
           </div>
         </div>
 
