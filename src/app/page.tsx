@@ -154,7 +154,7 @@ function Nav({ authed, theme, onToggleTheme }: { authed: boolean; theme: "dark" 
     { label: "Recursos gratis", href: "/recursos" },
   ];
   return (
-    <nav className="sticky top-0 z-50 border-b border-[rgba(var(--neto-line-rgb),0.06)] backdrop-blur-md"
+    <nav className="relative z-50 border-b border-[rgba(var(--neto-line-rgb),0.06)] backdrop-blur-md"
       style={{ background: theme === "light" ? "rgba(255,255,255,0.88)" : "rgba(8,14,26,0.88)" }}>
       <div className="max-w-6xl mx-auto px-5 flex items-center justify-between h-14">
         {/* Logo */}
