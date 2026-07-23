@@ -149,6 +149,7 @@ function Nav({ authed }: { authed: boolean }) {
     { label: "Secciones", href: "#secciones" },
     { label: "Cómo funciona", href: "#como" },
     { label: "Precios", href: "#precios" },
+    { label: "Recursos gratis", href: "/recursos" },
   ];
   return (
     <nav className="sticky top-0 z-50 border-b border-white/[0.06] backdrop-blur-md"
