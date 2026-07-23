@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import {
   Calculator, ArrowRight, ArrowLeft, ArrowUpRight, TrendingUp, ShieldAlert,
-  Megaphone, RefreshCw, Info,
+  Megaphone, RefreshCw, Info, Sun, Moon,
 } from "lucide-react";
 
 const G = "#10B981";
 const B = "#3B82F6";
 const R = "#EF4444";
+const THEME_KEY = "neto_landing_theme";
 
 type Escenario = "tres_cuotas" | "sin_cuotas" | "contra_entrega";
 
@@ -38,15 +39,16 @@ function formatUSD(n: number) {
 function Field({ label, value, onChange, suffix }: { label: string; value: string; onChange: (v: string) => void; suffix?: string }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">{label}</label>
+      <label className="block text-xs font-medium text-[var(--neto-text2)] mb-1.5">{label}</label>
       <div className="relative">
         <input
           type="number"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-[#080E1A] border border-white/[0.08] text-[#F1F5F9] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors"
+          className="w-full border border-[rgba(var(--neto-line-rgb),0.08)] text-[var(--neto-text)] rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#10B981]/50 transition-colors"
+          style={{ background: "var(--neto-bg)" }}
         />
-        {suffix && <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#475569]">{suffix}</span>}
+        {suffix && <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[var(--neto-text4)]">{suffix}</span>}
       </div>
     </div>
   );
@@ -54,19 +56,32 @@ function Field({ label, value, onChange, suffix }: { label: string; value: strin
 
 function LineaResultado({ label, ars, usd, negativo, destacado }: { label: string; ars: number; usd: number; negativo?: boolean; destacado?: boolean }) {
   return (
-    <div className={`flex items-center justify-between py-2 ${destacado ? "border-t border-white/[0.08] mt-1 pt-3" : ""}`}>
-      <span className={`text-xs ${destacado ? "font-bold text-[#F1F5F9]" : "text-[#64748B]"}`}>{label}</span>
+    <div className={`flex items-center justify-between py-2 ${destacado ? "border-t border-[rgba(var(--neto-line-rgb),0.08)] mt-1 pt-3" : ""}`}>
+      <span className={`text-xs ${destacado ? "font-bold text-[var(--neto-text)]" : "text-[var(--neto-text3)]"}`}>{label}</span>
       <div className="text-right">
-        <p className={`text-sm font-mono font-semibold ${destacado ? (negativo ? "text-[#EF4444]" : "text-[#10B981]") : "text-[#F1F5F9]"}`}>
+        <p className={`text-sm font-mono font-semibold ${destacado ? (negativo ? "text-[#EF4444]" : "text-[#10B981]") : "text-[var(--neto-text)]"}`}>
           {negativo && ars > 0 ? "-" : ""}{formatARS(Math.abs(ars))}
         </p>
-        <p className="text-[10px] font-mono text-[#475569]">{formatUSD(usd)}</p>
+        <p className="text-[10px] font-mono text-[var(--neto-text4)]">{formatUSD(usd)}</p>
       </div>
     </div>
   );
 }
 
 export default function RecursosPage() {
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "light" || saved === "dark") setTheme(saved);
+  }, []);
+  function toggleTheme() {
+    setTheme((t) => {
+      const next = t === "dark" ? "light" : "dark";
+      localStorage.setItem(THEME_KEY, next);
+      return next;
+    });
+  }
+
   /* Dólar blue — se busca solo, editable */
   const [dolar, setDolar] = useState("1560");
   const [dolarCargando, setDolarCargando] = useState(true);
@@ -157,41 +172,50 @@ export default function RecursosPage() {
   const esNegativo = r.ganancia < 0;
 
   return (
-    <div className="min-h-screen bg-[#080E1A] text-[#F1F5F9]">
-      <header className="border-b border-white/[0.06] px-5">
+    <div data-theme={theme} className="min-h-screen text-[var(--neto-text)] transition-colors duration-300" style={{ background: "var(--neto-bg)" }}>
+      <header className="border-b border-[rgba(var(--neto-line-rgb),0.06)] px-5">
         <div className="max-w-5xl mx-auto flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
             <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[#080E1A] font-black text-sm" style={{ background: G }}>N</span>
-            <span><span className="text-[#F1F5F9]">Neto</span><span style={{ color: G }}>.app</span></span>
+            <span><span className="text-[var(--neto-text)]">Neto</span><span style={{ color: G }}>.app</span></span>
           </Link>
-          <Link href="/signup" className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] btn-neto" style={{ background: G }}>
-            Empezar gratis <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--neto-text2)] hover:text-[var(--neto-text)] hover:bg-[rgba(var(--neto-line-rgb),0.06)] transition-colors"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <Link href="/signup" className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] btn-neto" style={{ background: G }}>
+              Empezar gratis <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </header>
 
       <div className="max-w-5xl mx-auto px-5 py-12">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors mb-6">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-[var(--neto-text2)] hover:text-[var(--neto-text)] transition-colors mb-6">
           <ArrowLeft className="w-3.5 h-3.5" /> Volver a Neto.app
         </Link>
 
         <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] text-[12px] text-[#94A3B8]">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[rgba(var(--neto-line-rgb),0.08)] bg-[rgba(var(--neto-line-rgb),0.04)] text-[12px] text-[var(--neto-text2)]">
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: G }} />
             Gratis · sin registro
           </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] text-[12px] text-[#94A3B8]">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[rgba(var(--neto-line-rgb),0.08)] bg-[rgba(var(--neto-line-rgb),0.04)] text-[12px] text-[var(--neto-text2)]">
             {dolarCargando ? (
               <RefreshCw className="w-3 h-3 animate-spin" />
             ) : (
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: dolarError ? "#F59E0B" : G }} />
             )}
-            Dólar blue: <span className="font-mono font-semibold text-[#F1F5F9]">${dolar}</span>
+            Dólar blue: <span className="font-mono font-semibold text-[var(--neto-text)]">${dolar}</span>
             <input
               type="number"
               value={dolar}
               onChange={(e) => setDolar(e.target.value)}
-              className="w-16 bg-transparent border-b border-white/[0.15] text-[#F1F5F9] text-xs outline-none focus:border-[#10B981]/50 ml-1"
+              className="w-16 bg-transparent border-b border-[rgba(var(--neto-line-rgb),0.15)] text-[var(--neto-text)] text-xs outline-none focus:border-[#10B981]/50 ml-1"
             />
           </div>
         </div>
@@ -199,7 +223,7 @@ export default function RecursosPage() {
         <h1 className="text-3xl lg:text-4xl font-black tracking-tight mb-3">
           Calculadora de <span style={{ color: G }}>rentabilidad real</span>
         </h1>
-        <p className="text-[16px] text-[#94A3B8] max-w-2xl mb-8">
+        <p className="text-[16px] text-[var(--neto-text2)] max-w-2xl mb-8">
           Comisión de Mercado Pago, IVA sobre la comisión, Tienda Nube, cuotas y contra entrega — la cuenta completa
           en pesos y dólares, no solo el margen bruto.
         </p>
@@ -214,7 +238,7 @@ export default function RecursosPage() {
               style={
                 tab === t.id
                   ? { background: G, color: "#080E1A" }
-                  : { background: "rgba(255,255,255,0.05)", color: "#94A3B8" }
+                  : { background: "rgba(var(--neto-line-rgb),0.05)", color: "var(--neto-text2)" }
               }
             >
               {t.label}
@@ -224,8 +248,8 @@ export default function RecursosPage() {
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Formulario */}
-          <div className="rounded-2xl border border-white/[0.06] bg-[#0C1424] p-6 card-lift">
-            <h2 className="text-sm font-bold text-[#F1F5F9] mb-5">Tus números</h2>
+          <div className="rounded-2xl border border-[rgba(var(--neto-line-rgb),0.06)] bg-[var(--neto-bg2)] p-6 card-lift">
+            <h2 className="text-sm font-bold text-[var(--neto-text)] mb-5">Tus números</h2>
 
             <div className="space-y-4">
               <Field label="Precio de venta" value={precioVenta} onChange={setPrecioVenta} suffix="ARS" />
@@ -240,7 +264,7 @@ export default function RecursosPage() {
 
               <Field label="Envío" value={envio} onChange={setEnvio} suffix="ARS" />
 
-              <div className="pt-2 border-t border-white/[0.06] space-y-4">
+              <div className="pt-2 border-t border-[rgba(var(--neto-line-rgb),0.06)] space-y-4">
                 {tab !== "contra_entrega" ? (
                   <>
                     <div className="grid grid-cols-2 gap-3">
@@ -266,9 +290,9 @@ export default function RecursosPage() {
           </div>
 
           {/* Resultado */}
-          <div className="rounded-2xl border border-white/[0.06] bg-[#0C1424] p-6 card-lift">
+          <div className="rounded-2xl border border-[rgba(var(--neto-line-rgb),0.06)] bg-[var(--neto-bg2)] p-6 card-lift">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-[#F1F5F9]">Resultado</h2>
+              <h2 className="text-sm font-bold text-[var(--neto-text)]">Resultado</h2>
               <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: `${G}18`, color: G }}>
                 En vivo
               </span>
@@ -281,19 +305,19 @@ export default function RecursosPage() {
             }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <TrendingUp className="w-3.5 h-3.5" style={{ color: esNegativo ? R : G }} />
-                <p className="text-[11px] text-[#94A3B8]">Ganancia neta por venta</p>
+                <p className="text-[11px] text-[var(--neto-text2)]">Ganancia neta por venta</p>
               </div>
               <p className="text-2xl font-black font-mono" style={{ color: esNegativo ? R : G }}>
                 {esNegativo ? "-" : ""}{formatARS(Math.abs(r.ganancia))}
-                <span className="text-sm font-normal text-[#64748B] ml-2">({formatUSD(toUSD(Math.abs(r.ganancia)))})</span>
+                <span className="text-sm font-normal text-[var(--neto-text3)] ml-2">({formatUSD(toUSD(Math.abs(r.ganancia)))})</span>
               </p>
-              <p className="text-xs text-[#64748B] mt-1">
+              <p className="text-xs text-[var(--neto-text3)] mt-1">
                 {isFinite(r.pctGanancia) ? `${r.pctGanancia.toFixed(1)}% sobre precio de venta` : "—"}
               </p>
             </div>
 
             {/* Desglose */}
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-[rgba(var(--neto-line-rgb),0.04)]">
               {tab !== "contra_entrega" ? (
                 <>
                   <LineaResultado label="Precio de venta" ars={r.pv} usd={toUSD(r.pv)} />
@@ -323,34 +347,34 @@ export default function RecursosPage() {
         </div>
 
         {/* Explicación */}
-        <div className="mt-6 rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 flex items-start gap-3">
-          <Info className="w-4 h-4 text-[#475569] mt-0.5 shrink-0" />
-          <div className="text-xs text-[#64748B] leading-relaxed space-y-1.5">
-            <p><span className="font-semibold text-[#94A3B8]">CPA (Costo por Adquisición):</span> lo que invertís en publicidad para generar una venta.</p>
-            <p><span className="font-semibold text-[#94A3B8]">CPA Break Even:</span> el máximo que podés invertir en ads por venta sin ganar ni perder plata.</p>
-            <p><span className="font-semibold text-[#94A3B8]">% de ganancia:</span> en ecommerce suele estar sano entre 10% y 30% sobre el precio de venta.</p>
+        <div className="mt-6 rounded-xl border border-[rgba(var(--neto-line-rgb),0.06)] bg-[rgba(var(--neto-line-rgb),0.02)] p-5 flex items-start gap-3">
+          <Info className="w-4 h-4 text-[var(--neto-text4)] mt-0.5 shrink-0" />
+          <div className="text-xs text-[var(--neto-text3)] leading-relaxed space-y-1.5">
+            <p><span className="font-semibold text-[var(--neto-text2)]">CPA (Costo por Adquisición):</span> lo que invertís en publicidad para generar una venta.</p>
+            <p><span className="font-semibold text-[var(--neto-text2)]">CPA Break Even:</span> el máximo que podés invertir en ads por venta sin ganar ni perder plata.</p>
+            <p><span className="font-semibold text-[var(--neto-text2)]">% de ganancia:</span> en ecommerce suele estar sano entre 10% y 30% sobre el precio de venta.</p>
           </div>
         </div>
 
         {/* Más recursos */}
         <div className="mt-10">
-          <h2 className="text-sm font-bold text-[#F1F5F9] mb-4">Más herramientas gratis</h2>
+          <h2 className="text-sm font-bold text-[var(--neto-text)] mb-4">Más herramientas gratis</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <a
               href="https://calculadora-breakeven-ads.netlify.app/"
               target="_blank"
               rel="noopener noreferrer"
-              className="group rounded-xl p-5 border border-white/[0.06] bg-[#0C1424] card-lift flex items-start gap-4"
+              className="group rounded-xl p-5 border border-[rgba(var(--neto-line-rgb),0.06)] bg-[var(--neto-bg2)] card-lift flex items-start gap-4"
             >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${B}18` }}>
                 <Megaphone className="w-5 h-5" style={{ color: B }} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-semibold text-[#F1F5F9]">Calculadora Break Even — Meta Ads</p>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-[#475569] group-hover:text-[#94A3B8] transition-colors shrink-0" />
+                  <p className="text-sm font-semibold text-[var(--neto-text)]">Calculadora Break Even — Meta Ads</p>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[var(--neto-text4)] group-hover:text-[var(--neto-text2)] transition-colors shrink-0" />
                 </div>
-                <p className="text-xs text-[#64748B] mt-1 leading-relaxed">
+                <p className="text-xs text-[var(--neto-text3)] mt-1 leading-relaxed">
                   CPA máximo, ROAS objetivo y escenarios de rentabilidad por campaña — cuánto podés gastar en ads
                   sin perder plata.
                 </p>
@@ -367,8 +391,8 @@ export default function RecursosPage() {
               <Calculator className="w-5 h-5" style={{ color: G }} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#F1F5F9]">¿Querés esto calculado solo, en cada venta?</p>
-              <p className="text-xs text-[#64748B] mt-0.5">Neto lo hace automático para todo tu catálogo, todos los meses — 14 días gratis.</p>
+              <p className="text-sm font-bold text-[var(--neto-text)]">¿Querés esto calculado solo, en cada venta?</p>
+              <p className="text-xs text-[var(--neto-text3)] mt-0.5">Neto lo hace automático para todo tu catálogo, todos los meses — 14 días gratis.</p>
             </div>
           </div>
           <Link href="/signup" className="flex items-center justify-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl text-[#080E1A] btn-neto shrink-0" style={{ background: G }}>
@@ -377,16 +401,16 @@ export default function RecursosPage() {
         </div>
       </div>
 
-      <footer className="border-t border-white/[0.05] py-8 px-5 mt-8">
+      <footer className="border-t border-[rgba(var(--neto-line-rgb),0.05)] py-8 px-5 mt-8">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm font-bold">
             <span className="w-6 h-6 rounded-md flex items-center justify-center text-[#080E1A] font-black text-xs" style={{ background: G }}>N</span>
-            <span><span className="text-[#F1F5F9]">Neto</span><span style={{ color: G }}>.app</span></span>
-            <span className="text-[#334155] font-normal ml-2 text-xs">© {new Date().getFullYear()} — Hecho con ♥ en Argentina</span>
+            <span><span className="text-[var(--neto-text)]">Neto</span><span style={{ color: G }}>.app</span></span>
+            <span className="text-[var(--neto-text5)] font-normal ml-2 text-xs">© {new Date().getFullYear()} — Hecho con ♥ en Argentina</span>
           </div>
-          <div className="flex items-center gap-5 text-[13px] text-[#475569]">
-            <Link href="/terminos" className="hover:text-[#94A3B8] transition-colors">Términos</Link>
-            <Link href="/privacidad" className="hover:text-[#94A3B8] transition-colors">Privacidad</Link>
+          <div className="flex items-center gap-5 text-[13px] text-[var(--neto-text4)]">
+            <Link href="/terminos" className="hover:text-[var(--neto-text2)] transition-colors">Términos</Link>
+            <Link href="/privacidad" className="hover:text-[var(--neto-text2)] transition-colors">Privacidad</Link>
           </div>
         </div>
       </footer>
