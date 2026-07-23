@@ -100,7 +100,24 @@
   --neto-red: #EF4444;
   --neto-text: #F1F5F9;
   --neto-text2: #94A3B8;
-  --neto-text3: #475569;
+  --neto-text3: #64748B;
+  --neto-text4: #475569;
+  --neto-text5: #334155;
+  --neto-line-rgb: 255, 255, 255;
+}
+
+/* Landing pública (/) — toggle claro/oscuro. El resto de la app (dashboard)
+   sigue siempre oscuro, esto solo aplica donde se use [data-theme]. */
+[data-theme="light"] {
+  --neto-bg: #FFFFFF;
+  --neto-bg2: #F8FAFC;
+  --neto-bg3: #F1F5F9;
+  --neto-text: #0F172A;
+  --neto-text2: #334155;
+  --neto-text3: #64748B;
+  --neto-text4: #94A3B8;
+  --neto-text5: #A8B3C4;
+  --neto-line-rgb: 15, 23, 42;
 }
 
 /* ── Motion tokens ── */

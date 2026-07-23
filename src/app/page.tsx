@@ -34,8 +34,10 @@ import {
   Megaphone,
   FileText,
   BookOpen,
+  Sun,
+  Moon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /* ─── Paleta ─── */
 const G = "#10B981"; // verde
@@ -128,21 +130,21 @@ function FeatureCard({
   accent: string;
 }) {
   return (
-    <div className="group rounded-xl p-5 border border-white/[0.06] bg-[#0C1424] card-lift">
+    <div className="group rounded-xl p-5 border border-[rgba(var(--neto-line-rgb),0.06)] card-lift" style={{ background: "var(--neto-bg2)" }}>
       <div
         className="w-9 h-9 rounded-lg flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
         style={{ background: `${accent}18` }}
       >
         <Icon className="w-4.5 h-4.5" style={{ color: accent }} />
       </div>
-      <h3 className="text-[15px] font-semibold text-[#F1F5F9] mb-1.5">{title}</h3>
-      <p className="text-[13px] text-[#64748B] leading-relaxed">{desc}</p>
+      <h3 className="text-[15px] font-semibold text-[var(--neto-text)] mb-1.5">{title}</h3>
+      <p className="text-[13px] text-[var(--neto-text3)] leading-relaxed">{desc}</p>
     </div>
   );
 }
 
 /* ─── Nav ─── */
-function Nav({ authed }: { authed: boolean }) {
+function Nav({ authed, theme, onToggleTheme }: { authed: boolean; theme: "dark" | "light"; onToggleTheme: () => void }) {
   const [open, setOpen] = useState(false);
   const links = [
     { label: "Funcionalidades", href: "#features" },
@@ -152,15 +154,15 @@ function Nav({ authed }: { authed: boolean }) {
     { label: "Recursos gratis", href: "/recursos" },
   ];
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/[0.06] backdrop-blur-md"
-      style={{ background: "rgba(8,14,26,0.88)" }}>
+    <nav className="sticky top-0 z-50 border-b border-[rgba(var(--neto-line-rgb),0.06)] backdrop-blur-md"
+      style={{ background: theme === "light" ? "rgba(255,255,255,0.88)" : "rgba(8,14,26,0.88)" }}>
       <div className="max-w-6xl mx-auto px-5 flex items-center justify-between h-14">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
           <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[#080E1A] font-black text-sm"
             style={{ background: G }}>N</span>
           <span>
-            <span className="text-[#F1F5F9]">Neto</span><span style={{ color: G }}>.app</span>
+            <span className="text-[var(--neto-text)]">Neto</span><span style={{ color: G }}>.app</span>
           </span>
         </Link>
 
@@ -168,7 +170,7 @@ function Nav({ authed }: { authed: boolean }) {
         <div className="hidden md:flex items-center gap-6">
           {links.map((l) => (
             <a key={l.href} href={l.href}
-              className="text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors">
+              className="text-sm text-[var(--neto-text2)] hover:text-[var(--neto-text)] transition-colors">
               {l.label}
             </a>
           ))}
@@ -176,6 +178,13 @@ function Nav({ authed }: { authed: boolean }) {
 
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={onToggleTheme}
+            aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--neto-text2)] hover:text-[var(--neto-text)] hover:bg-[rgba(var(--neto-line-rgb),0.06)] transition-colors"
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           {authed ? (
             <Link href="/dashboard"
               className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg text-[#080E1A] transition-colors btn-neto"
@@ -185,7 +194,7 @@ function Nav({ authed }: { authed: boolean }) {
           ) : (
             <>
               <Link href="/login"
-                className="text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors px-3 py-2">
+                className="text-sm text-[var(--neto-text2)] hover:text-[var(--neto-text)] transition-colors px-3 py-2">
                 Iniciar sesión
               </Link>
               <Link href="/signup"
@@ -197,23 +206,32 @@ function Nav({ authed }: { authed: boolean }) {
           )}
         </div>
 
-        {/* Mobile menu toggle */}
-        <button className="md:hidden text-[#94A3B8]" onClick={() => setOpen(!open)}>
-          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        {/* Mobile: toggle de tema + menu */}
+        <div className="md:hidden flex items-center gap-1">
+          <button
+            onClick={onToggleTheme}
+            aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--neto-text2)]"
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <button className="text-[var(--neto-text2)]" onClick={() => setOpen(!open)}>
+            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
       {open && (
-        <div className="md:hidden border-t border-white/[0.06] px-5 py-4 space-y-3"
-          style={{ background: "#080E1A" }}>
+        <div className="md:hidden border-t border-[rgba(var(--neto-line-rgb),0.06)] px-5 py-4 space-y-3"
+          style={{ background: "var(--neto-bg)" }}>
           {links.map((l) => (
             <a key={l.href} href={l.href} onClick={() => setOpen(false)}
-              className="block text-sm text-[#94A3B8] hover:text-[#F1F5F9] py-1">
+              className="block text-sm text-[var(--neto-text2)] hover:text-[var(--neto-text)] py-1">
               {l.label}
             </a>
           ))}
-          <div className="pt-3 border-t border-white/[0.06] flex flex-col gap-2">
+          <div className="pt-3 border-t border-[rgba(var(--neto-line-rgb),0.06)] flex flex-col gap-2">
             {authed ? (
               <Link href="/dashboard"
                 className="text-center text-sm font-semibold px-4 py-2.5 rounded-lg text-[#080E1A]"
@@ -223,7 +241,7 @@ function Nav({ authed }: { authed: boolean }) {
             ) : (
               <>
                 <Link href="/login"
-                  className="text-center text-sm text-[#94A3B8] border border-white/[0.1] px-4 py-2.5 rounded-lg hover:border-white/[0.2]">
+                  className="text-center text-sm text-[var(--neto-text2)] border border-[rgba(var(--neto-line-rgb),0.1)] px-4 py-2.5 rounded-lg hover:border-[rgba(var(--neto-line-rgb),0.2)]">
                   Iniciar sesión
                 </Link>
                 <Link href="/signup"
@@ -241,9 +259,26 @@ function Nav({ authed }: { authed: boolean }) {
 }
 
 /* ─── Página ─── */
+const THEME_KEY = "neto_landing_theme";
+
 export default function LandingPage() {
   const { user } = useAuth();
   const authed = !!user;
+
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "light" || saved === "dark") setTheme(saved);
+  }, []);
+
+  function toggleTheme() {
+    setTheme((t) => {
+      const next = t === "dark" ? "light" : "dark";
+      localStorage.setItem(THEME_KEY, next);
+      return next;
+    });
+  }
 
   const features = [
     {
@@ -415,8 +450,8 @@ export default function LandingPage() {
   return (
     <>
       <GuitafixOfferModal />
-      <div className="min-h-screen text-[#F1F5F9] page-enter" style={{ background: "#080E1A" }}>
-      <Nav authed={authed} />
+      <div data-theme={theme} className="min-h-screen text-[var(--neto-text)] page-enter transition-colors duration-300" style={{ background: "var(--neto-bg)" }}>
+      <Nav authed={authed} theme={theme} onToggleTheme={toggleTheme} />
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-20 pb-24 px-5">
@@ -427,7 +462,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           {/* Left */}
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] text-[12px] text-[#94A3B8] mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[rgba(var(--neto-line-rgb),0.08)] bg-[rgba(var(--neto-line-rgb),0.04)] text-[12px] text-[var(--neto-text2)] mb-6">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: G }} />
               14 días gratis · sin tarjeta de crédito
             </div>
@@ -438,7 +473,7 @@ export default function LandingPage() {
               en tu negocio
             </h1>
 
-            <p className="text-[17px] text-[#94A3B8] leading-relaxed mb-8 max-w-lg">
+            <p className="text-[17px] text-[var(--neto-text2)] leading-relaxed mb-8 max-w-lg">
               La plataforma de finanzas para ecommerce argentino. Márgenes reales,
               inventario inteligente y proyecciones — sin Excel, sin cuentas a mano.
             </p>
@@ -464,7 +499,7 @@ export default function LandingPage() {
               {!authed && (
                 <Link
                   href="/login"
-                  className="flex items-center justify-center gap-2 text-[15px] font-medium px-6 py-3.5 rounded-xl border border-white/[0.1] text-[#94A3B8] hover:border-white/[0.2] hover:text-[#F1F5F9] transition-all"
+                  className="flex items-center justify-center gap-2 text-[15px] font-medium px-6 py-3.5 rounded-xl border border-[rgba(var(--neto-line-rgb),0.1)] text-[var(--neto-text2)] hover:border-[rgba(var(--neto-line-rgb),0.2)] hover:text-[var(--neto-text)] transition-all"
                 >
                   Ya tengo cuenta
                 </Link>
@@ -472,7 +507,7 @@ export default function LandingPage() {
             </div>
 
             {/* Social proof mini */}
-            <div className="flex flex-wrap items-center gap-4 text-[13px] text-[#475569]">
+            <div className="flex flex-wrap items-center gap-4 text-[13px] text-[var(--neto-text4)]">
               <div className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5" style={{ color: G }} />
                 Sin tarjeta de crédito
@@ -498,8 +533,8 @@ export default function LandingPage() {
       </section>
 
       {/* ── Logos strip ── */}
-      <div className="border-y border-white/[0.05] py-5">
-        <div className="max-w-6xl mx-auto px-5 flex flex-wrap items-center justify-center gap-8 text-[13px] text-[#334155]">
+      <div className="border-y border-[rgba(var(--neto-line-rgb),0.05)] py-5">
+        <div className="max-w-6xl mx-auto px-5 flex flex-wrap items-center justify-center gap-8 text-[13px] text-[var(--neto-text5)]">
           {[
             "🇦🇷  Hecho para Argentina",
             "🏪  Integración con Tienda Nube",
@@ -519,7 +554,7 @@ export default function LandingPage() {
               Tu negocio crece, pero{" "}
               <span style={{ color: "#EF4444" }}>¿sabés realmente cuánto ganás?</span>
             </h2>
-            <p className="text-[16px] text-[#64748B] max-w-2xl mx-auto">
+            <p className="text-[16px] text-[var(--neto-text3)] max-w-2xl mx-auto">
               La mayoría de los dueños de ecommerce manejan sus finanzas con planillas
               desactualizadas, sin saber el margen real ni cuándo van a quedar sin stock.
             </p>
@@ -547,10 +582,10 @@ export default function LandingPage() {
               },
             ].map((p) => (
               <div key={p.title}
-                className="rounded-xl p-5 border border-white/[0.06] bg-[#0C1424] card-lift">
+                className="rounded-xl p-5 border border-[rgba(var(--neto-line-rgb),0.06)] card-lift" style={{ background: "var(--neto-bg2)" }}>
                 <span className="text-3xl mb-3 block">{p.emoji}</span>
-                <h3 className="text-[15px] font-semibold text-[#F1F5F9] mb-2">{p.title}</h3>
-                <p className="text-[13px] text-[#64748B] mb-3">{p.desc}</p>
+                <h3 className="text-[15px] font-semibold text-[var(--neto-text)] mb-2">{p.title}</h3>
+                <p className="text-[13px] text-[var(--neto-text3)] mb-3">{p.desc}</p>
                 <p className="text-[12px] font-semibold" style={{ color: G }}>✓ {p.fix}</p>
               </div>
             ))}
@@ -568,7 +603,7 @@ export default function LandingPage() {
             <h2 className="text-3xl lg:text-4xl font-black tracking-tight mb-4">
               Todo lo que necesitás para gestionar tu negocio
             </h2>
-            <p className="text-[16px] text-[#64748B] max-w-xl mx-auto">
+            <p className="text-[16px] text-[var(--neto-text3)] max-w-xl mx-auto">
               Neto reemplaza 5 herramientas distintas en una sola plataforma pensada
               para el ecommerce argentino.
             </p>
@@ -583,7 +618,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Secciones de la app ── */}
-      <section id="secciones" className="py-20 px-5 border-t border-white/[0.04]">
+      <section id="secciones" className="py-20 px-5 border-t border-[rgba(var(--neto-line-rgb),0.04)]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: "#8B5CF6" }}>
@@ -592,7 +627,7 @@ export default function LandingPage() {
             <h2 className="text-3xl lg:text-4xl font-black tracking-tight mb-4">
               Cada sección de Neto, explicada
             </h2>
-            <p className="text-[16px] text-[#64748B] max-w-xl mx-auto">
+            <p className="text-[16px] text-[var(--neto-text3)] max-w-xl mx-auto">
               Así está organizado el dashboard por dentro — las mismas 16 secciones
               que vas a ver apenas te registrés.
             </p>
@@ -601,7 +636,7 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-3 gap-6">
             {secciones.map((grupo) => (
               <div key={grupo.label}
-                className="rounded-2xl border border-white/[0.06] bg-[#0C1424] p-5 card-lift">
+                className="rounded-2xl border border-[rgba(var(--neto-line-rgb),0.06)] bg-[var(--neto-bg2)] p-5 card-lift">
                 <p className="text-[11px] font-bold uppercase tracking-widest mb-4"
                   style={{ color: grupo.accent }}>
                   {grupo.label}
@@ -619,7 +654,7 @@ export default function LandingPage() {
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-[13px] font-semibold text-[#F1F5F9]">{item.title}</p>
+                            <p className="text-[13px] font-semibold text-[var(--neto-text)]">{item.title}</p>
                             {item.badge && (
                               <span
                                 className="text-[8.5px] font-black uppercase tracking-wider px-1.5 py-[1px] rounded-full shrink-0"
@@ -629,7 +664,7 @@ export default function LandingPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-[12px] text-[#64748B] leading-snug mt-0.5">{item.desc}</p>
+                          <p className="text-[12px] text-[var(--neto-text3)] leading-snug mt-0.5">{item.desc}</p>
                         </div>
                       </div>
                     );
@@ -642,7 +677,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section id="como" className="py-20 px-5 border-t border-white/[0.04]">
+      <section id="como" className="py-20 px-5 border-t border-[rgba(var(--neto-line-rgb),0.04)]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: B }}>
@@ -657,13 +692,13 @@ export default function LandingPage() {
             {steps.map((s, i) => (
               <div key={s.n} className="relative">
                 {i < 2 && (
-                  <div className="hidden md:block absolute top-6 left-[calc(100%_-_16px)] w-1/2 h-px border-t border-dashed border-white/[0.08]" />
+                  <div className="hidden md:block absolute top-6 left-[calc(100%_-_16px)] w-1/2 h-px border-t border-dashed border-[rgba(var(--neto-line-rgb),0.08)]" />
                 )}
                 <div className="text-5xl font-black mb-4 font-mono" style={{ color: `${G}22` }}>
                   {s.n}
                 </div>
-                <h3 className="text-[16px] font-bold text-[#F1F5F9] mb-2">{s.title}</h3>
-                <p className="text-[13px] text-[#64748B] leading-relaxed">{s.desc}</p>
+                <h3 className="text-[16px] font-bold text-[var(--neto-text)] mb-2">{s.title}</h3>
+                <p className="text-[13px] text-[var(--neto-text3)] leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -680,7 +715,7 @@ export default function LandingPage() {
             <h2 className="text-3xl lg:text-4xl font-black tracking-tight mb-4">
               Simple. Sin sorpresas.
             </h2>
-            <p className="text-[16px] text-[#64748B]">
+            <p className="text-[16px] text-[var(--neto-text3)]">
               14 días gratis en cualquier plan. Cobro manual en ARS al tipo de cambio del día.
             </p>
           </div>
@@ -693,8 +728,8 @@ export default function LandingPage() {
                   key={plan.id}
                   className="relative rounded-2xl border p-6 flex flex-col gap-4 card-lift"
                   style={{
-                    background: plan.popular ? `${plan.accent}07` : "#0C1424",
-                    borderColor: plan.popular ? `${plan.accent}40` : "rgba(255,255,255,0.07)",
+                    background: plan.popular ? `${plan.accent}07` : "var(--neto-bg2)",
+                    borderColor: plan.popular ? `${plan.accent}40` : "rgba(var(--neto-line-rgb),0.07)",
                     boxShadow: plan.popular ? `0 0 32px ${plan.accent}14` : "none",
                   }}
                 >
@@ -715,21 +750,21 @@ export default function LandingPage() {
                       <Icon className="w-4.5 h-4.5" style={{ color: plan.accent }} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#F1F5F9]">{plan.label}</p>
-                      <p className="text-[11px] text-[#64748B]">{plan.desc}</p>
+                      <p className="text-sm font-bold text-[var(--neto-text)]">{plan.label}</p>
+                      <p className="text-[11px] text-[var(--neto-text3)]">{plan.desc}</p>
                     </div>
                   </div>
 
                   <div className="flex items-end gap-1.5">
-                    <span className="text-4xl font-black text-[#F1F5F9] leading-none">{plan.price}</span>
-                    <span className="text-xs text-[#64748B] mb-1">{plan.period}</span>
+                    <span className="text-4xl font-black text-[var(--neto-text)] leading-none">{plan.price}</span>
+                    <span className="text-xs text-[var(--neto-text3)] mb-1">{plan.period}</span>
                   </div>
 
                   <ul className="space-y-2.5 flex-1">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2.5">
                         <Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: plan.accent }} />
-                        <span className="text-[13px] text-[#94A3B8]">{f}</span>
+                        <span className="text-[13px] text-[var(--neto-text2)]">{f}</span>
                       </li>
                     ))}
                   </ul>
@@ -740,7 +775,7 @@ export default function LandingPage() {
                     style={
                       plan.popular
                         ? { background: plan.accent, color: "#080E1A" }
-                        : { background: "rgba(255,255,255,0.06)", color: "#F1F5F9", border: "1px solid rgba(255,255,255,0.1)" }
+                        : { background: "rgba(var(--neto-line-rgb),0.06)", color: "var(--neto-text)", border: "1px solid rgba(var(--neto-line-rgb),0.1)" }
                     }
                   >
                     Empezar gratis <ArrowRight className="w-3.5 h-3.5" />
@@ -751,13 +786,13 @@ export default function LandingPage() {
           </div>
 
           {/* Desarrollo a medida */}
-          <div className="max-w-4xl mx-auto mt-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 flex items-center gap-4 flex-wrap sm:flex-nowrap card-lift">
-            <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
-              <Wrench className="w-5 h-5 text-[#94A3B8]" />
+          <div className="max-w-4xl mx-auto mt-5 rounded-2xl border border-[rgba(var(--neto-line-rgb),0.08)] bg-[rgba(var(--neto-line-rgb),0.02)] p-5 flex items-center gap-4 flex-wrap sm:flex-nowrap card-lift">
+            <div className="w-10 h-10 rounded-xl bg-[rgba(var(--neto-line-rgb),0.06)] flex items-center justify-center shrink-0">
+              <Wrench className="w-5 h-5 text-[var(--neto-text2)]" />
             </div>
             <div className="flex-1 min-w-[200px]">
-              <p className="text-sm font-bold text-[#F1F5F9]">¿Tu negocio necesita algo distinto?</p>
-              <p className="text-xs text-[#64748B] mt-0.5">
+              <p className="text-sm font-bold text-[var(--neto-text)]">¿Tu negocio necesita algo distinto?</p>
+              <p className="text-xs text-[var(--neto-text3)] mt-0.5">
                 Desarrollo a medida para tu negocio — módulos, integraciones o reportes hechos a tu manera.
               </p>
             </div>
@@ -765,14 +800,14 @@ export default function LandingPage() {
               href={WA_ASESOR}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold bg-white/[0.06] text-[#F1F5F9] border border-white/[0.08] hover:bg-white/[0.09] transition-colors shrink-0"
+              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold bg-[rgba(var(--neto-line-rgb),0.06)] text-[var(--neto-text)] border border-[rgba(var(--neto-line-rgb),0.08)] hover:bg-[rgba(var(--neto-line-rgb),0.09)] transition-colors shrink-0"
             >
               <MessageCircle className="w-4 h-4" />
               Contactar al equipo
             </a>
           </div>
 
-          <p className="text-center text-[13px] text-[#475569] mt-6">
+          <p className="text-center text-[13px] text-[var(--neto-text4)] mt-6">
             ¿Tenés dudas antes de arrancar?{" "}
             <a href={WA_ASESOR} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1 font-semibold hover:opacity-80 transition-opacity" style={{ color: G }}>
@@ -783,7 +818,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="py-24 px-5 border-t border-white/[0.04]">
+      <section className="py-24 px-5 border-t border-[rgba(var(--neto-line-rgb),0.04)]">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6"
             style={{ background: `${G}18` }}>
@@ -793,7 +828,7 @@ export default function LandingPage() {
             Empezá a tomar decisiones{" "}
             <span style={{ color: G }}>con números reales</span>
           </h2>
-          <p className="text-[17px] text-[#64748B] mb-8 max-w-xl mx-auto">
+          <p className="text-[17px] text-[var(--neto-text3)] mb-8 max-w-xl mx-auto">
             14 días gratis, sin tarjeta de crédito. Cancelás cuando quieras.
           </p>
           {authed ? (
@@ -813,26 +848,26 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-white/[0.05] py-8 px-5">
+      <footer className="border-t border-[rgba(var(--neto-line-rgb),0.05)] py-8 px-5">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm font-bold">
             <span className="w-6 h-6 rounded-md flex items-center justify-center text-[#080E1A] font-black text-xs"
               style={{ background: G }}>N</span>
             <span>
-              <span className="text-[#F1F5F9]">Neto</span><span style={{ color: G }}>.app</span>
+              <span className="text-[var(--neto-text)]">Neto</span><span style={{ color: G }}>.app</span>
             </span>
-            <span className="text-[#334155] font-normal ml-2 text-xs">
+            <span className="text-[var(--neto-text5)] font-normal ml-2 text-xs">
               © {new Date().getFullYear()} — Hecho con ♥ en Argentina
             </span>
           </div>
-          <div className="flex items-center gap-5 text-[13px] text-[#475569]">
-            <Link href="/terminos" className="hover:text-[#94A3B8] transition-colors">
+          <div className="flex items-center gap-5 text-[13px] text-[var(--neto-text4)]">
+            <Link href="/terminos" className="hover:text-[var(--neto-text2)] transition-colors">
               Términos
             </Link>
-            <Link href="/privacidad" className="hover:text-[#94A3B8] transition-colors">
+            <Link href="/privacidad" className="hover:text-[var(--neto-text2)] transition-colors">
               Privacidad
             </Link>
-            <Link href="/login" className="hover:text-[#94A3B8] transition-colors">
+            <Link href="/login" className="hover:text-[var(--neto-text2)] transition-colors">
               Iniciar sesión
             </Link>
           </div>
