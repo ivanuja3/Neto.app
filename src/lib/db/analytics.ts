@@ -48,6 +48,7 @@ export async function createExpense(expense: {
   type: "fixed" | "variable";
   amount: number;
   frequency: "monthly" | "quarterly" | "yearly";
+  cost_center_id?: string | null;
 }) {
   return db.from("expenses").insert(expense).select().single();
 }

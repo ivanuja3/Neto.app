@@ -24,6 +24,7 @@ import {
   ScanLine,
   BookOpen,
   UserCircle,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./auth-provider";
@@ -67,6 +68,7 @@ const NAV_SECTIONS = [
       { key: "clientes",     label: "Clientes",      href: "/clientes",      icon: Users },
       { key: "empleados",    label: "Empleados",     href: "/empleados",     icon: UserCircle },
       { key: "proveedores",  label: "Proveedores",   href: "/proveedores",   icon: Truck },
+      { key: "centros-costo", label: "Centros de costo", href: "/centros-costo", icon: Landmark },
     ],
   },
   {

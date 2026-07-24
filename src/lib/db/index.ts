@@ -9,3 +9,6 @@ export { getSuppliers, getPurchases, createPurchase } from "./purchases";
 
 // ── Queries de Campañas ───────────────────────────────────────
 export { getAdCampaigns, getAdSummary } from "./campaigns";
+
+// ── Queries de Centros de costo ("cajas") ──────────────────────
+export * from "./cost-centers";

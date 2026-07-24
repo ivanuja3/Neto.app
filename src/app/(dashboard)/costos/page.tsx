@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { getExpenses, getKpisCurrentMonth, createExpense, deleteExpense } from "@/lib/db/analytics";
 import { getCompany } from "@/lib/db/companies";
+import { getCostCenters } from "@/lib/db/cost-centers";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
 import { PlusCircle, Pencil, Trash2, AlertCircle, Receipt, Sparkles } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -101,13 +102,19 @@ function getPlantilla(industry: string | null): Sugerencia[] {
 function FormCosto({ userId, onSaved, onClose, initial }: { userId: string; onSaved: () => void; onClose: () => void; initial?: Partial<{ nombre: string; categoria: string; tipo: string; monto: string }> | null }) {
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState("");
+  const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
   const [form, setForm]     = useState({
     nombre:       initial?.nombre    ?? "",
     categoria:    initial?.categoria ?? "General",
     tipo:         (initial?.tipo as "fixed" | "variable") ?? "fixed",
     monto:        initial?.monto     ?? "",
     periodicidad: "monthly" as "monthly" | "quarterly" | "yearly",
+    costCenterId: "",
   });
+
+  useEffect(() => {
+    getCostCenters(userId, { activeOnly: true }).then((r) => setCostCenters(r.data ?? []));
+  }, [userId]);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -123,6 +130,7 @@ function FormCosto({ userId, onSaved, onClose, initial }: { userId: string; onSa
       type:      form.tipo,
       amount:    parseFloat(form.monto),
       frequency: form.periodicidad,
+      cost_center_id: form.costCenterId || null,
     });
     if (dbErr) { setError("Error al guardar. Intentá de nuevo."); setSaving(false); return; }
     onSaved();
@@ -163,6 +171,15 @@ function FormCosto({ userId, onSaved, onClose, initial }: { userId: string; onSa
           </select>
         </Field>
       </div>
+
+      {costCenters.length > 0 && (
+        <Field label="Caja / unidad de negocio (opcional)">
+          <select value={form.costCenterId} onChange={(e) => set("costCenterId", e.target.value)} className={selectCls}>
+            <option value="">Sin asignar</option>
+            {costCenters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </Field>
+      )}
 
       {error && <p className="text-xs text-[#EF4444] bg-[#EF4444]/[0.08] border border-[#EF4444]/20 rounded-lg px-3 py-2">{error}</p>}
       <SaveButton saving={saving} label="Agregar costo" />

@@ -5,6 +5,7 @@ import { useAuth } from "@/components/auth-provider";
 import { getPnlMonthly } from "@/lib/db/analytics";
 import { getSalesByChannel, getTopProducts, createOrder, getOrders } from "@/lib/db/orders";
 import { getProducts, registerStockMove } from "@/lib/db/products";
+import { getCostCenters } from "@/lib/db/cost-centers";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CsvImport } from "@/components/csv-import";
@@ -63,6 +64,7 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
   const [prodSearch,  setProdSearch]  = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedProd, setSelectedProd] = useState<ProductOption | null>(null);
+  const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
   const [form, setForm] = useState({
     canal:          "tiendanube",
     fecha:          new Date().toISOString().split("T")[0],
@@ -73,6 +75,7 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
     costoUnit:      "",
     estadoPago:     "paid" as "not_paid" | "paid" | "partial" | "refunded",
     metodoPago:     "cash",
+    costCenterId:   "",
     notes:          "",
   });
 
@@ -82,6 +85,7 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
       setProducts(prods);
       // no pre-seleccionar nada, el usuario busca
     });
+    getCostCenters(userId, { activeOnly: true }).then((r) => setCostCenters(r.data ?? []));
   }, [userId]);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -145,6 +149,7 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
           payment_method:   form.metodoPago,
           partner_id:       null,
           order_number:     null,
+          cost_center_id:   form.costCenterId || null,
           notes:            form.notes.trim() || null,
         },
         [{
@@ -198,6 +203,15 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
           <input type="date" value={form.fecha} onChange={(e) => set("fecha", e.target.value)} className={inputCls} />
         </Field>
       </div>
+
+      {costCenters.length > 0 && (
+        <Field label="Caja / unidad de negocio (opcional)">
+          <select value={form.costCenterId} onChange={(e) => set("costCenterId", e.target.value)} className={selectCls}>
+            <option value="">Sin asignar</option>
+            {costCenters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </Field>
+      )}
 
       <Field label="Producto">
         <div className="relative">

@@ -138,11 +138,12 @@ export interface Database {
           margin_percent: number;   // generated
           payment_state: "not_paid" | "paid" | "partial" | "refunded";
           payment_method: string | null;
+          cost_center_id: string | null;
           notes: string | null;
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["orders"]["Row"], "id" | "margin" | "margin_percent" | "created_at" | "updated_at" | "payment_method"> & { payment_method?: string | null };
+        Insert: Omit<Database["public"]["Tables"]["orders"]["Row"], "id" | "margin" | "margin_percent" | "created_at" | "updated_at" | "payment_method" | "cost_center_id"> & { payment_method?: string | null; cost_center_id?: string | null };
         Update: Partial<Database["public"]["Tables"]["orders"]["Insert"]>;
       };
 
@@ -212,11 +213,39 @@ export interface Database {
           frequency: "one_time" | "monthly" | "quarterly" | "yearly";
           date: string;
           active: boolean;
+          cost_center_id: string | null;
           notes: string | null;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["expenses"]["Row"], "id" | "created_at">;
+        Insert: Omit<Database["public"]["Tables"]["expenses"]["Row"], "id" | "created_at" | "cost_center_id"> & { cost_center_id?: string | null };
         Update: Partial<Database["public"]["Tables"]["expenses"]["Insert"]>;
+      };
+
+      cost_centers: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["cost_centers"]["Row"], "id" | "created_at" | "active"> & { active?: boolean };
+        Update: Partial<Database["public"]["Tables"]["cost_centers"]["Insert"]>;
+      };
+
+      cost_center_transfers: {
+        Row: {
+          id: string;
+          user_id: string;
+          date: string;
+          from_cost_center_id: string;
+          to_cost_center_id: string;
+          amount: number;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["cost_center_transfers"]["Row"], "id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["cost_center_transfers"]["Insert"]>;
       };
 
       ad_campaigns: {
@@ -417,6 +446,8 @@ export type AnalyticLine  = Tables<"analytic_lines">;
 export type Employee      = Tables<"employees">;
 export type Quote         = Tables<"quotes">;
 export type QuoteItem     = Tables<"quote_items">;
+export type CostCenter    = Tables<"cost_centers">;
+export type CostCenterTransfer = Tables<"cost_center_transfers">;
 
 // Tipos compuestos (con joins)
 export type OrderWithItems = Order & { items: OrderItem[] };
