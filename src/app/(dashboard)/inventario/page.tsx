@@ -38,7 +38,7 @@ function catColor(cat: string) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ProductWithStock = { id: string; name: string; sku: string; list_price: number; price_cash: number | null; price_installments: number | null; standard_cost: number; category: { id?: string; name: string } | null; stock: { qty_on_hand: number; avg_cost: number }[] };
+type ProductWithStock = { id: string; name: string; sku: string; type: "physical" | "service" | "digital"; list_price: number; price_cash: number | null; price_installments: number | null; standard_cost: number; category: { id?: string; name: string } | null; stock: { qty_on_hand: number; avg_cost: number }[] };
 type StockMove = { id: string; type: string; qty: number; date: string; notes: string | null; product: { name: string; sku: string } | null };
 type ProductCategory = { id: string; name: string };
 
@@ -50,6 +50,7 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
   const [form, setForm] = useState({
     nombre:              "",
     sku:                 "",
+    tipo:                "physical" as "physical" | "service",
     categoria:           "",
     precio:              "",
     precioCash:          "",
@@ -80,7 +81,7 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
       price_installments: parseFloat(form.precioInstallments) || null,
       standard_cost:      parseFloat(form.costo) || 0,
       active:             true,
-      type:               "physical",
+      type:               form.tipo,
       notes:              null,
       barcode:            null,
       image_url:          null,
@@ -88,7 +89,9 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
 
     if (prodErr || !prod) { setError("Error al guardar el producto"); setSaving(false); return; }
 
-    const stockInicial = parseInt(form.stockInicial) || 0;
+    // Los servicios no tienen stock físico — nunca generan movimiento inicial,
+    // así no quedan con qty_on_hand=0 disparando alertas de "sin stock".
+    const stockInicial = form.tipo === "service" ? 0 : (parseInt(form.stockInicial) || 0);
     if (stockInicial > 0) {
       await registerStockMove({
         user_id:    userId,
@@ -121,12 +124,20 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
         </Field>
       </div>
 
-      <Field label="Categoría">
-        <select value={form.categoria} onChange={(e) => set("categoria", e.target.value)} className={selectCls}>
-          <option value="">Sin categoría</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Categoría">
+          <select value={form.categoria} onChange={(e) => set("categoria", e.target.value)} className={selectCls}>
+            <option value="">Sin categoría</option>
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Tipo">
+          <select value={form.tipo} onChange={(e) => set("tipo", e.target.value)} className={selectCls}>
+            <option value="physical">Producto físico (con stock)</option>
+            <option value="service">Servicio (sin stock)</option>
+          </select>
+        </Field>
+      </div>
 
       <div className="grid grid-cols-3 gap-3">
         <Field label="Precio lista ($)">
@@ -148,10 +159,12 @@ function FormProducto({ userId, onSaved, onClose }: { userId: string; onSaved: (
           onChange={(e) => set("costo", e.target.value)} placeholder="7000" className={inputCls} />
       </Field>
 
-      <Field label="Stock inicial (unidades)">
-        <input type="number" min="0" step="1" value={form.stockInicial}
-          onChange={(e) => set("stockInicial", e.target.value)} placeholder="0" className={inputCls} />
-      </Field>
+      {form.tipo === "physical" && (
+        <Field label="Stock inicial (unidades)">
+          <input type="number" min="0" step="1" value={form.stockInicial}
+            onChange={(e) => set("stockInicial", e.target.value)} placeholder="0" className={inputCls} />
+        </Field>
+      )}
 
       {error && <p className="text-xs text-[#EF4444] bg-[#EF4444]/[0.08] border border-[#EF4444]/20 rounded-lg px-3 py-2">{error}</p>}
       <SaveButton saving={saving} label="Agregar producto" />
@@ -312,7 +325,10 @@ export default function InventarioPage() {
   }, [user, refreshKey]);
 
   /* ── Derived data ── */
-  const items = products.map((p) => {
+  // Los servicios no tienen stock físico — quedan afuera de la tabla,
+  // alertas y KPIs de inventario (que asumen unidades físicas repuestas).
+  const servicios = products.filter((p) => p.type === "service");
+  const items = products.filter((p) => p.type !== "service").map((p) => {
     const inv     = p.stock?.[0];
     const stock   = Number(inv?.qty_on_hand ?? 0);
     const cost    = Number(inv?.avg_cost ?? p.standard_cost ?? 0);
@@ -685,6 +701,40 @@ export default function InventarioPage() {
           </span>
         </div>
       </div>
+
+      {/* Servicios — sin stock, no entran en la tabla ni en las alertas de arriba */}
+      {!loading && servicios.length > 0 && (
+        <div className="bg-[#0C1424] border border-white/[0.06] rounded-xl">
+          <div className="px-5 py-4 border-b border-white/[0.06]">
+            <h2 className="text-sm font-semibold text-[#F1F5F9]">Servicios</h2>
+            <p className="text-xs text-[#475569] mt-0.5">Sin stock físico — matrícula, cuotas, honorarios, etc.</p>
+          </div>
+          <div className="divide-y divide-white/[0.04]">
+            {servicios.map((s) => (
+              <div key={s.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
+                <div>
+                  <p className="text-[13px] text-[#F1F5F9] font-medium">{s.name}</p>
+                  <p className="text-[11px] text-[#475569] font-mono mt-0.5">{s.sku}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="font-mono font-semibold text-[#F1F5F9] text-sm">{formatARS(s.list_price)}</span>
+                  <button
+                    onClick={() => setEditProduct({
+                      id: s.id, nombre: s.name, sku: s.sku ?? "",
+                      precio: s.list_price, precioCash: s.price_cash, precioInstallments: s.price_installments,
+                      costo: s.standard_cost, categoria: s.category?.name ?? "Sin categoría", categoriaId: s.category?.id,
+                    })}
+                    className="text-[#475569] hover:text-[#94A3B8] transition-colors p-1 rounded hover:bg-white/[0.04]"
+                    title="Editar servicio"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Modal actualización masiva de precios */}
       {showBulk && (

@@ -6,6 +6,7 @@ import { getPnlMonthly } from "@/lib/db/analytics";
 import { getSalesByChannel, getTopProducts, createOrder, getOrders } from "@/lib/db/orders";
 import { getProducts, registerStockMove } from "@/lib/db/products";
 import { getCostCenters } from "@/lib/db/cost-centers";
+import { getCustomers, createCustomer } from "@/lib/db/purchases";
 import { Modal, Field, inputCls, selectCls, SaveButton } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CsvImport } from "@/components/csv-import";
@@ -46,7 +47,7 @@ function canalColor(ch: string) {
   return CANAL_COLORS[ch.toLowerCase().replace(/\s/g, "")] ?? "#6366F1";
 }
 
-type ProductOption = { id: string; name: string; sku: string | null; list_price: number; price_cash: number | null; price_installments: number | null; standard_cost: number };
+type ProductOption = { id: string; name: string; sku: string | null; type: "physical" | "service" | "digital"; list_price: number; price_cash: number | null; price_installments: number | null; standard_cost: number };
 
 const CANALES = ["mercadolibre", "tiendanube", "instagram", "whatsapp", "web", "other"];
 
@@ -65,6 +66,10 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedProd, setSelectedProd] = useState<ProductOption | null>(null);
   const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
+  const [customers, setCustomers] = useState<{ id: string; name: string }[]>([]);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [savingCustomer, setSavingCustomer] = useState(false);
   const [form, setForm] = useState({
     canal:          "tiendanube",
     fecha:          new Date().toISOString().split("T")[0],
@@ -76,8 +81,13 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
     estadoPago:     "paid" as "not_paid" | "paid" | "partial" | "refunded",
     metodoPago:     "cash",
     costCenterId:   "",
+    partnerId:      "",
     notes:          "",
   });
+
+  function reloadCustomers() {
+    getCustomers(userId).then((r: { data: { id: string; name: string }[] | null }) => setCustomers(r.data ?? []));
+  }
 
   useEffect(() => {
     getProducts(userId).then((r: { data: ProductOption[] | null }) => {
@@ -86,7 +96,20 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
       // no pre-seleccionar nada, el usuario busca
     });
     getCostCenters(userId, { activeOnly: true }).then((r) => setCostCenters(r.data ?? []));
+    reloadCustomers();
   }, [userId]);
+
+  async function handleAddCustomer() {
+    if (!newCustomerName.trim()) return;
+    setSavingCustomer(true);
+    const { data, error } = await createCustomer({ user_id: userId, name: newCustomerName.trim(), type: "customer" });
+    setSavingCustomer(false);
+    if (error || !data) return;
+    reloadCustomers();
+    set("partnerId", data.id);
+    setNewCustomerName("");
+    setShowNewCustomer(false);
+  }
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -147,7 +170,7 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
           amount_tax:       0,
           payment_state:    form.estadoPago,
           payment_method:   form.metodoPago,
-          partner_id:       null,
+          partner_id:       form.partnerId || null,
           order_number:     null,
           cost_center_id:   form.costCenterId || null,
           notes:            form.notes.trim() || null,
@@ -168,18 +191,22 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
 
       if (!result) { setError("Error al guardar. Intentá de nuevo."); return; }
 
-      // best-effort: stock move failure no bloquea la venta ya guardada
-      await registerStockMove({
-        user_id:    userId,
-        product_id: form.productId,
-        date:       form.fecha,
-        type:       "out",
-        qty:        -qty,
-        cost_unit:  costo,
-        ref_type:   "manual",
-        ref_id:     null,
-        notes:      `Venta manual - ${skuCode}`,
-      }).catch((err) => console.error("registerStockMove error:", err));
+      // Los servicios (matrícula, cuotas, honorarios) no tienen stock físico
+      // que descontar — solo los productos físicos generan movimiento.
+      if (selectedProd.type !== "service") {
+        // best-effort: stock move failure no bloquea la venta ya guardada
+        await registerStockMove({
+          user_id:    userId,
+          product_id: form.productId,
+          date:       form.fecha,
+          type:       "out",
+          qty:        -qty,
+          cost_unit:  costo,
+          ref_type:   "manual",
+          ref_id:     null,
+          notes:      `Venta manual - ${skuCode}`,
+        }).catch((err) => console.error("registerStockMove error:", err));
+      }
 
       onSaved();
       onClose();
@@ -212,6 +239,42 @@ function FormVenta({ userId, onSaved, onClose }: { userId: string; onSaved: () =
           </select>
         </Field>
       )}
+
+      <Field label="Cliente (opcional)">
+        {showNewCustomer ? (
+          <div className="flex gap-2">
+            <input
+              value={newCustomerName}
+              onChange={(e) => setNewCustomerName(e.target.value)}
+              placeholder="Nombre del cliente"
+              className={inputCls}
+              autoFocus
+            />
+            <button type="button" onClick={handleAddCustomer} disabled={savingCustomer}
+              className="shrink-0 px-3.5 py-2.5 rounded-lg text-sm font-semibold bg-[#10B981] text-[#080E1A] hover:bg-[#0D9268] transition-colors disabled:opacity-60">
+              {savingCustomer ? "..." : "Crear"}
+            </button>
+            <button type="button" onClick={() => { setShowNewCustomer(false); setNewCustomerName(""); }}
+              className="shrink-0 px-3 py-2.5 rounded-lg text-sm text-[#475569] hover:text-[#94A3B8] transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <select value={form.partnerId} onChange={(e) => set("partnerId", e.target.value)} className={selectCls}>
+              <option value="">Sin asignar</option>
+              {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <button type="button" onClick={() => setShowNewCustomer(true)}
+              className="shrink-0 px-3.5 py-2.5 rounded-lg text-xs font-semibold border border-white/[0.08] text-[#94A3B8] hover:bg-white/[0.04] transition-colors whitespace-nowrap">
+              + Nuevo
+            </button>
+          </div>
+        )}
+        {form.partnerId && (
+          <p className="text-[10px] text-[#475569] mt-1">Para trackear cuentas por cobrar reales, asigná el cliente en cada venta.</p>
+        )}
+      </Field>
 
       <Field label="Producto">
         <div className="relative">
